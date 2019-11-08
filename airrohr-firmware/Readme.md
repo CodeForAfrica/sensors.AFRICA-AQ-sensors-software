@@ -13,6 +13,9 @@ Todos:
 The basic configuration of the parameters is done via the file `ext_dev.h`.
 
 ## WLAN configuration
+
+(It is advisable to use your mobile device for this step).
+
 see also wiki page on Github [Configuration of the sensors] (https://github.com/opendata-stuttgart/meta/wiki/Konfiguration-der-Sensoren)
 
 If the default WLAN can not be reached after 10 seconds, an access point is set up which can be reached via "Particulate matter sensor - \ [Sensor-ID \]". After connecting to this access point, all requests should be redirected to the configuration page. Direct address of the page is http://192.168.4.1/.
