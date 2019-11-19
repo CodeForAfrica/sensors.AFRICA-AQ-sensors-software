@@ -171,7 +171,7 @@ String url_sensemap = "/boxes/BOXID/data?luftdaten=1";
 const int httpPort_sensemap = 443;
 char senseboxid[30] = "";
 
-char host_influx[100] = "http://ec2-34-250-53-214.eu-west-1.compute.amazonaws.com";
+char host_influx[100] = "ec2-34-250-53-214.eu-west-1.compute.amazonaws.com";
 char url_influx[100] = "/write?db=airquality";
 int port_influx = 8086;
 char user_influx[100] = "";
@@ -372,6 +372,7 @@ String last_gps_lng;
 String last_gps_alt;
 String last_gps_date;
 String last_gps_time;
+String last_gps_timestamp;
 
 String esp_chipid;
 
@@ -1411,6 +1412,14 @@ void webserver_values() {
 			page_content += empty_row;
 			page_content += table_row_from_value("DS18B20", FPSTR(INTL_TEMPERATUR), last_value_DS18B20_T, "°C");
 		}
+   if (gps_read){
+    page_content += empty_row;
+    page_content += table_row_from_value("Neo-6M", "Lat", last_gps_lat, "°");
+    page_content += table_row_from_value("Neo-6M", "Lng", last_gps_lng, "°");
+    page_content += table_row_from_value("Neo-6M", "Alt", last_gps_alt, "M");
+    page_content += table_row_from_value("Neo-6M", "Date", last_gps_date, " ");
+    page_content += table_row_from_value("Neo-6M", "Time", last_gps_time, " ");
+   }
 
 		page_content += empty_row;
 		page_content += table_row_from_value("WiFi", FPSTR(INTL_SIGNAL),  String(signal_strength), "dBm");
@@ -2702,6 +2711,7 @@ String sensorGPS() {
 	String gps_alt = "";
 	String gps_date = "";
 	String gps_time = "";
+  String gps_timestamp = "";
 
 	debug_out(F("Start reading GPS"), DEBUG_MED_INFO, 1);
 
@@ -2728,6 +2738,7 @@ String sensorGPS() {
 				gps_date += "/";
 				gps_date += String(gps.date.year());
 				last_gps_date = gps_date;
+        last_gps_timestamp = gps_date;
 			} else {
 				debug_out(F("Date INVALID"), DEBUG_MAX_INFO, 1);
 			}
@@ -2745,6 +2756,7 @@ String sensorGPS() {
 				if (gps.time.centisecond() < 10) { gps_time += "0"; }
 				gps_time += String(gps.time.centisecond());
 				last_gps_time = gps_time;
+        last_gps_timestamp += "T" + gps_time;
 			} else {
 				debug_out(F("Time: INVALID"), DEBUG_MAX_INFO, 1);
 			}
@@ -2760,13 +2772,15 @@ String sensorGPS() {
 		s += Value2Json(F("GPS_lat"), last_gps_lat);
 		s += Value2Json(F("GPS_lon"), last_gps_lng);
 		s += Value2Json(F("GPS_height"), last_gps_alt);
-		s += Value2Json(F("GPS_date"), last_gps_date);
-		s += Value2Json(F("GPS_time"), last_gps_time);
+		//s += Value2Json(F("GPS_date"), last_gps_date);
+		//s += Value2Json(F("GPS_time"), last_gps_time);
+    s += Value2Json(F("GPS_timestamp"), last_gps_timestamp);
 		last_gps_lat = "";
 		last_gps_lng = "";
 		last_gps_alt = "";
 		last_gps_date = "";
 		last_gps_time = "";
+    last_gps_timestamp = "";
 	}
 
 	if ( gps.charsProcessed() < 10) {
@@ -2959,6 +2973,7 @@ void setup() {
 	readConfig();
 	setup_webserver();
   if (gsm_capable){
+    stop_SDS();
     connectGSM();
   } else { 
     connectWifi();
@@ -2972,7 +2987,6 @@ void setup() {
 	//autoUpdate();
 	create_basic_auth_strings();
 	serialSDS.begin(9600);
-	//serialGPS.begin(9600);
 	//ds18b20.begin();
 	//pinMode(PPD_PIN_PM1, INPUT_PULLUP);	// Listen at the designated PIN
 	//pinMode(PPD_PIN_PM2, INPUT_PULLUP);	// Listen at the designated PIN
