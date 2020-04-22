@@ -1,2 +1,1 @@
-# Roadmap and things to be done
-
+airrohr-firmware/Contributing.md

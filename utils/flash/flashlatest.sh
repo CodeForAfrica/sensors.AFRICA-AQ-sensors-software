@@ -1,5 +1,7 @@
 #!/bin/bash
 
+binfile="latest_de.bin"
+binfile="latest_en.bin"
 outappendfile=listofflashed.csv
 echo "usage: [esptool=/path/to/esptool] [esptoolpy=/path/to/esptool.py] [devserial=/dev/ttyUSB0] $0"
 echo "writes output to $outappendfile"
@@ -40,7 +42,7 @@ fi
 
 
 if [ ! -f "$outappendfile" ] ; then
-	echo "nodemcuID	sensorname	hexchipID	MAC	revision:serial	email	lat	lon	locationaddress	sensorID1	sensorname1	sensorID2	sensorname2" >> "$outappendfile"
+	echo "nodemcuID	sensorname	hexchipID	MAC	revision:serial	email	lat	lon	locationaddress	sensorID1	sensorname1	sensorID2	sensorname2" |tee -a "$outappendfile"
 fi
 
 # get info
@@ -53,10 +55,11 @@ email="@"
 lat="LAT"
 lon="LON"
 echo ""
+echo "$chipid $chid $chiddec"
 
-read -p "ask more infos? [Y/n]" ans
+read -p "ask more infos? [y/N]" ans
 
-if [ "$ans" != "n" ] ; then
+if [ "$ans" == "y" ] ; then
 	#examplestr="V0-000"
 	#read -p "PM sensor revision (on back/flat side top left corner)? [default: $examplestr]" ans
 	#if [ -n "$ans" ] ; then
@@ -96,24 +99,23 @@ echo -e "$info" | tee -a "$outappendfile"
 
 #esptool.py write_flash -vv -cb 57600 -ca 0x00000 -cp /dev/ttyUSB0 -cf latest.bin 
 
-read -p "patch Freifunk to XXXXXXXX? [y/N] " ans
+#read -p "patch Freifunk to XXXXXXXX? [y/N] " ans
 
-binfile="latest.bin"
 wget -c "https://www.madavi.de/sensor/update/data/$binfile"
 
-if [ "$ans" == "y" ] 
-then
-	patchedbinfile="${binfile}.patched"
-	hexdump -ve '1/1 "%.2X"' "$binfile" | sed "s/4672656966756E6B/5858585858585858/g" | xxd -r -p > "$patchedbinfile"
-	binfile="$patchedbinfile"
-fi
+#if [ "$ans" == "y" ] 
+#then
+#	patchedbinfile="${binfile}.patched"
+#	hexdump -ve '1/1 "%.2X"' "$binfile" | sed "s/4672656966756E6B/5858585858585858/g" | xxd -r -p > "$patchedbinfile"
+#	binfile="$patchedbinfile"
+#fi
 
 # flash 
 # esptool.py write_flash 0x00000 "$binfile" "$@"
 
 
-read -p "flash now? [y/N] " ans
-if [ "$ans" == "y" ] 
+read -p "flash now? [Y/n] " ans
+if [ "$ans" == "Y" -o -z "$ans" ]
 then
 	$esptool -vv -cd nodemcu -cb 57600 -ca 0x00000 -cp "$devserial" -cf "$binfile"
 fi
