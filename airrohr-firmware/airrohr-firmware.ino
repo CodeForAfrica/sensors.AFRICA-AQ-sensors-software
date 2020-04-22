@@ -2746,7 +2746,7 @@ static unsigned long sendSensorCommunity(const String& data, const int pin, cons
 	}
 
 	return sum_send_time;
-} */
+} 
 /*****************************************************************
  * send data to mqtt api                                         *
  *****************************************************************/
