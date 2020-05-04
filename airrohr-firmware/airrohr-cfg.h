@@ -1,3 +1,5 @@
+
+
 // This file is generated, please do not edit.
 // Change airrohr-cfg.h.py instead.
 
@@ -45,7 +47,6 @@ enum ConfigShapeId {
 	Config_dnms_read,
 	Config_dnms_correction,
 	Config_gps_read,
-	Config_gsm_capable,
 	Config_send2cfa,
 	Config_ssl_cfa,
 	Config_send2dusti,
@@ -109,7 +110,6 @@ const char CFG_KEY_DS18B20_READ[] PROGMEM = "ds18b20_read";
 const char CFG_KEY_DNMS_READ[] PROGMEM = "dnms_read";
 const char CFG_KEY_DNMS_CORRECTION[] PROGMEM = "dnms_correction";
 const char CFG_KEY_GPS_READ[] PROGMEM = "gps_read";
-const char CFG_KEY_GSM_CAPABLE[] PROGMEM = "gsm_capable";
 const char CFG_KEY_SEND2CFA[] PROGMEM = "send2cfa";
 const char CFG_KEY_SSL_CFA[] PROGMEM = "ssl_cfa";
 const char CFG_KEY_SEND2DUSTI[] PROGMEM = "send2dusti";
@@ -173,7 +173,6 @@ static constexpr ConfigShapeEntry configShape[] PROGMEM = {
 	{ Config_Type_Bool, 0, FPSTR(CFG_KEY_DNMS_READ), &cfg::dnms_read },
 	{ Config_Type_String, sizeof(cfg::dnms_correction)-1, FPSTR(CFG_KEY_DNMS_CORRECTION), cfg::dnms_correction },
 	{ Config_Type_Bool, 0, FPSTR(CFG_KEY_GPS_READ), &cfg::gps_read },
-	{ Config_Type_Bool, 0, FPSTR(CFG_KEY_GSM_CAPABLE), &cfg::gsm_capable },
 	{ Config_Type_Bool, 0, FPSTR(CFG_KEY_SEND2CFA), &cfg::send2cfa },
 	{ Config_Type_Bool, 0, FPSTR(CFG_KEY_SSL_CFA), &cfg::ssl_cfa },
 	{ Config_Type_Bool, 0, FPSTR(CFG_KEY_SEND2DUSTI), &cfg::send2dusti },

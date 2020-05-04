@@ -128,18 +128,6 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 #define GPS_SERIAL_RX D5
 #define GPS_SERIAL_TX D6
 
-// GSM
-#define GSM_CAPABLE 0
-#if defined(ESP8266)
-#define FONA_RX D5
-#define FONA_TX D6
-#define FONA_RST D8
-#define GPRS_APN ""
-#define GPRS_USERNAME ""
-#define GPRS_PASSWORD ""
-#define GSM_PIN ""
-#endif
-
 // PPD42NS, the cheaper version of the particle sensor
 #define PPD_PIN_PM1 GPS_SERIAL_TX
 #define PPD_PIN_PM2 GPS_SERIAL_RX
@@ -209,11 +197,9 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 
 
 // DHT22, temperature, humidity
-#define DHT_PIN 2 //pin of PCF8574 DHT is connected to
 #define DHT_READ 1
+#define DHT_TYPE DHT22
 #define DHT_API_PIN 7
-#define DHT_TYPE DHT22 //DHT 22 (AM2302), AM2321
-#define PCF8574_ADDRESS 0x02
 
 // HTU21D, temperature, humidity
 #define HTU21D_READ 0
@@ -266,9 +252,6 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 // GPS, preferred Neo-6M
 #define GPS_READ 0
 #define GPS_API_PIN 9
-
-//GSM
-#define GSM_CAPABLE 0
 
 // MHZ19 CO2 sensor
 #define MHZ19_READ 0
