@@ -59,10 +59,6 @@
 #include <WString.h>
 #include <pgmspace.h>
 
-#include <Arduino.h>
-#include <ESP8266WiFi.h>
-#define INTL_EN
-
 // increment on change
 #define SOFTWARE_VERSION_STR "NRZ-2020-129"
 String SOFTWARE_VERSION(SOFTWARE_VERSION_STR);
@@ -73,10 +69,6 @@ String SOFTWARE_VERSION(SOFTWARE_VERSION_STR);
 
 #if defined(ESP8266)
 #include <FS.h>                     // must be first
-#include <DNSServer.h>
-#include <WiFiUdp.h>
-#include <ESP8266httpUpdate.h>
-#include <WiFiClientSecure.h>
 #include <ESP8266HTTPClient.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
@@ -86,13 +78,6 @@ String SOFTWARE_VERSION(SOFTWARE_VERSION_STR);
 #include <ctime>
 #include <coredecls.h>
 #include <sntp.h>
-#include <Adafruit_FONA.h>
-#include <base64.h>
-#endif
-#if defined(ARDUINO_SAMD_ZERO)
-#include <RHReliableDataGram.h>
-#include <RH.RF69.h>
-#include <SPI.h>
 #endif
 
 #if defined(ESP32)
@@ -126,7 +111,6 @@ String SOFTWARE_VERSION(SOFTWARE_VERSION_STR);
 #include "./bmx280_i2c.h"
 #include "./sps30_i2c.h"
 #include "./dnms_i2c.h"
-#include "./PCF8574.h"
 
 #if defined(INTL_BG)
 #include "intl_bg.h"
@@ -237,7 +221,6 @@ namespace cfg {
 	bool dnms_read = DNMS_READ;
 	char dnms_correction[LEN_DNMS_CORRECTION] = DNMS_CORRECTION;
 	bool gps_read = GPS_READ;
-  bool gsm_capable = GSM_CAPABLE;
 
 	// send to "APIs"
   bool send2cfa = SEND2CFA;
@@ -306,14 +289,12 @@ namespace cfg {
 }
 
  #define JSON_BUFFER_SIZE 2300
+ 
 enum class PmSensorCmd {
 	Start,
 	Stop,
 	ContinuousMode
 };
-
-String basic_auth_influx;
-String basic_auth_custom;
 
 LoggerConfig loggerConfigs[LoggerCount];
 
@@ -354,7 +335,7 @@ LiquidCrystal_I2C* lcd_2004 = nullptr;
  * SDS011 declarations                                           *
  *****************************************************************/
 #if defined(ESP8266)
-SoftwareSerial serialSDS(PM_SERIAL_TX, PM_SERIAL_RX, false, 128);
+SoftwareSerial serialSDS;
 SoftwareSerial* serialGPS;
 #endif
 #if defined(ESP32)
@@ -365,7 +346,7 @@ SoftwareSerial* serialGPS;
 /*****************************************************************
  * DHT declaration                                               *
  *****************************************************************/
-DHT dht(DHTPIN, DHTTYPE, PCF8574_ADDRESS);
+DHT dht(ONEWIRE_PIN, DHT_TYPE);
 
 /*****************************************************************
  * HTU21D declaration                                            *
@@ -398,24 +379,6 @@ DallasTemperature ds18b20(&oneWire);
  *****************************************************************/
 TinyGPSPlus gps;
 
-/* ************************************************ ****************
-/ * GSM declaration *
-/ ************************************************** ************** */
-# if defined (ESP8266)
-SoftwareSerial fonaSS (FONA_TX, FONA_RX);
-SoftwareSerial * fonaSerial = & fonaSS;
-Adafruit_FONA fona = Adafruit_FONA (FONA_RST);
-
-uint8_t GSM_CONNECTED = 1 ;
-uint8_t GPRS_CONNECTED = 1 ;
-
-bool gsm_capable = 0 ;
-char gsm_pin [ 5 ] = " " ;
-
-char gprs_apn [ 100 ] = " " ;
-char gprs_username [ 100 ] = " " ;
-char gprs_password [ 100 ] = " " ;
-# endif
 /*****************************************************************
  * Variable Definitions for PPD24NS                              *
  * P1 for PM10 & P2 for PM25                                     *
@@ -1511,7 +1474,6 @@ static void webserver_config_send_body_get(String& page_content) {
 	add_form_checkbox_sensor(Config_pms_read, FPSTR(INTL_PMS));
 	add_form_checkbox_sensor(Config_bmp_read, FPSTR(INTL_BMP180));
 	add_form_checkbox(Config_gps_read, FPSTR(INTL_NEO6M));
-  add_form_checkbox(Config_gsm_capable, FPSTR(INTL_GSM_CAPABLE));
 
 	page_content += FPSTR(WEB_BR_LF_B);
 	page_content += F("APIs");
@@ -2479,106 +2441,6 @@ static WiFiClient* getNewLoggerWiFiClient(const LoggerEntry logger) {
 	}
 	_client->setTimeout(20000);
 	return _client;
-}
-
-/*****************************************************************
-/* GSM auto connecting script                                   *
-/*****************************************************************/
-void connectGSM(){
-
-  int retry_count = 0;
-
-  fonaSerial->begin(4800);
-  if (! fona.begin(*fonaSerial)) {
-    debug_out(F("Couldn't find FONA"), DEBUG_MIN_INFO, 1);
-
-    debug_out(F("Switching to Wifi"), DEBUG_MIN_INFO, 1);
-    gsm_capable = 0;
-    connectWifi();
-  } else {
-    debug_out(F("FONA is OK"), DEBUG_MIN_INFO, 0);
-
-    unlock_pin();
-
-    fona.setGPRSNetworkSettings(FPSTR(gprs_apn), FPSTR(gprs_username), FPSTR(gprs_password));
-
-    char imei[16] = {0}; // MUST use a 16 character buffer for IMEI!
-    uint8_t imeiLen = fona.getIMEI(imei);
-    if (imeiLen > 0) {
-     debug_out(F("Module IMEI: "), DEBUG_MIN_INFO, 1); debug_out(String(imei),DEBUG_MIN_INFO,1);
-    }
-
-    while((fona.getNetworkStatus() != GSM_CONNECTED) && (retry_count < 40)){
-      Serial.println("Not registered on network");
-      delay(5000);
-      retry_count++;
-
-      if (retry_count > 30){
-        delay(5000);
-        restart_GSM();
-      }
-
-      flushSerial();
-    }
-
-    if (fona.getNetworkStatus() != GSM_CONNECTED) {
-      display_debug("AP ID: Feinstaubsensor-" + esp_chipid + " - IP: 192.168.4.1");
-      wifiConfig();
-      if (fona.getNetworkStatus() != GSM_CONNECTED) {
-        retry_count = 0;
-        while ((fona.getNetworkStatus() != GSM_CONNECTED) && (retry_count < 20)) {
-          delay(500);
-          debug_out(".", DEBUG_MIN_INFO, 0);
-          retry_count++;
-        }
-        debug_out("", DEBUG_MIN_INFO, 1);
-      }
-    }else{
-      enableGPRS();
-   }
- }
-}
-
-void enableGPRS(){
-  int retry_count = 0;
-  while((fona.GPRSstate() != GPRS_CONNECTED) && (retry_count < 40)){
-    delay(3000);
-    fona.enableGPRS(true);
-    retry_count++;
-   }
-
-   fona.setGPRSNetworkSettings(FONAFlashStringPtr("internet"), FONAFlashStringPtr(""), FONAFlashStringPtr(""));
-}
-
-void restart_GSM(){
-
-  flushSerial();
-
-  fonaSerial->begin(4800);
-  if (! fona.begin(*fonaSerial)) {
-    debug_out(F("Couldn't find FONA"), DEBUG_MIN_INFO, 1);
-    //while (1);
-  }
-
-  unlock_pin();
-
-  enableGPRS();
-
-}
-
-
-void unlock_pin(){
-  flushSerial();
-  if (strlen(gsm_pin) > 1){
-    debug_out(F("\nAttempting to Unlock SIM please wait: "), DEBUG_MIN_INFO, 1);
-    delay(10000);
-    if (! fona.unlockSIM(gsm_pin)) {
-       debug_out(F("Failed to Unlock SIM card with pin: "), DEBUG_MIN_INFO, 1);
-       debug_out(gsm_pin, DEBUG_MIN_INFO, 1);
-       delay(10000);
-    }
-  }
-
 }
 /*****************************************************************
  * send data to rest api                                         *

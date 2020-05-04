@@ -54,7 +54,7 @@ class DHT {
   bool _lastresult;
   uint32_t _lastreadtime, _maxcycles;
   uint32_t expectPulse(bool level);
-  
+
 };
 
 class InterruptLock {

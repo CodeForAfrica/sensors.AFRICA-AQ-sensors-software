@@ -55,7 +55,7 @@ float DHT::readTemperature(bool force) {
 }
 
 float DHT::readHumidity(bool force) {
-  float f = NAN; 
+  float f = NAN;
   if (read(force)) {
     switch (_type) {
     case DHT11:
@@ -112,7 +112,7 @@ bool DHT::read(bool force) {
   pinMode(_pin, INPUT_PULLUP);
   delayMicroseconds(50); //Delay a bit to let sensor pull data line low.
 
-      // First expect a low signal for ~80 microseconds followed by a high signal
+    // First expect a low signal for ~80 microseconds followed by a high signal
     // for ~80 microseconds again.
     if (expectPulse(LOW) == 0) {
       DEBUG_PRINTLN(F("Timeout waiting for start signal low pulse."));

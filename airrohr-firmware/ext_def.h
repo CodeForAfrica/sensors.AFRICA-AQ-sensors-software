@@ -107,7 +107,7 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 #define PWD_INFLUX ""
 #define SSL_INFLUX 0
 
-//  === pin assignments for NodeMCU V2 board
+// pin assignments for NodeMCU V2 board
 #if defined(ESP8266)
 // define pin for one wire sensors
 #define ONEWIRE_PIN D7

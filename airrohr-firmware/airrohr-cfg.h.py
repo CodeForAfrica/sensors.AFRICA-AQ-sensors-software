@@ -76,7 +76,6 @@ enum ConfigEntryType : unsigned short {
 	Config_Type_UInt,
 	Config_Type_Time,
 	Config_Type_String,
-	Config_Type_Char,
 	Config_Type_Password
 };
 
