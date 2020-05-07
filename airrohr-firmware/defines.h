@@ -34,6 +34,8 @@
 
 #define MAX_PORT_DIGITS 5
 
+#define ECHO_TO_SERIAL 1      // echo micro sd data to serial port
+
 // define debug levels
 #define DEBUG_ERROR 1
 #define DEBUG_WARNING 2

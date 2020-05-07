@@ -103,6 +103,8 @@ String SOFTWARE_VERSION(SOFTWARE_VERSION_STR);
 #include <DNSServer.h>
 #include "./DHT.h"
 #include "./PCF8574.h"
+#include "SPI.h"
+#include <SD.h>
 #include <Adafruit_HTU21DF.h>
 #include <Adafruit_BMP085.h>
 #include <Adafruit_SHT31.h>
@@ -171,6 +173,8 @@ const unsigned long SAMPLETIME_MS = 30000;									// time between two measureme
 const unsigned long SAMPLETIME_SDS_MS = 1000;								// time between two measurements of the SDS011, PMSx003, Honeywell PM sensor
 const unsigned long WARMUPTIME_SDS_MS = 15000;								// time needed to "warm up" the sensor before we can take the first measurement
 const unsigned long READINGTIME_SDS_MS = 5000;								// how long we read data from the PM sensors
+const unsigned long SD_LOG_INTERVAL_MS = 1000;								// time between grabbing data and logging it
+const unsigned long SD_SYNC_INTERVAL_MS = 145000;							// time between calling to write data to SD 
 const unsigned long SAMPLETIME_GPS_MS = 50;
 const unsigned long DISPLAY_UPDATE_INTERVAL_MS = 5000;						// time between switching display to next "screen"
 const unsigned long ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
@@ -222,6 +226,7 @@ namespace cfg {
 	bool dnms_read = DNMS_READ;
 	char dnms_correction[LEN_DNMS_CORRECTION] = DNMS_CORRECTION;
 	bool gps_read = GPS_READ;
+	bool sd_read = SD_READ;
 
 	// send to "APIs"
 	bool send2cfa = SEND2CFA;
@@ -233,6 +238,7 @@ namespace cfg {
 	bool send2custom = SEND2CUSTOM;
 	bool send2influx = SEND2INFLUX;
 	bool send2csv = SEND2CSV;
+	bool send2sd = SEND2SD;
 
 	bool auto_update = AUTO_UPDATE;
 	bool use_beta = USE_BETA;
@@ -379,6 +385,13 @@ DallasTemperature ds18b20(&oneWire);
  * GPS declaration                                               *
  *****************************************************************/
 TinyGPSPlus gps;
+
+/*****************************************************************
+ * Micro SD declaration                                          *
+ *****************************************************************/
+Adafruit_Micro_SD_Card_Breakout_Board sd;
+const int chipSelect = 5;
+File sensor_readings;
 
 /*****************************************************************
  * Variable Definitions for PPD24NS                              *
@@ -2598,6 +2611,40 @@ static void send_csv(const String& data) {
 }
 
 /*****************************************************************
+ * send as csv to micro SD                                        *
+ *****************************************************************/
+static void send_csv(const String& data) {
+	DynamicJsonDocument json2data(JSON_BUFFER_SIZE);
+	DeserializationError err = deserializeJson(json2data, data);
+	debug_outln_info(F("SD Output: "), data);
+	if (!err) {
+		String headline = F("Timestamp_ms;");
+		String valueline(act_milli);
+		valueline += ';';
+		for (JsonObject measurement : json2data[FPSTR(JSON_SENSOR_DATA_VALUES)].as<JsonArray>()) {
+			headline += measurement["value_type"].as<char*>();
+			headline += ';';
+			valueline += measurement["value"].as<char*>();
+			valueline += ';';
+		}
+		static bool first_csv_line = true;
+		if (first_csv_line) {
+			if (headline.length() > 0) {
+				headline.remove(headline.length() - 1);
+			}
+			Serial.println(headline);
+			first_csv_line = false;
+		}
+		if (valueline.length() > 0) {
+			valueline.remove(valueline.length() - 1);
+		}
+		Serial.println(valueline);
+	} else {
+		debug_outln_error(FPSTR(DBG_TXT_DATA_READ_FAILED));
+	}
+}
+
+/*****************************************************************
  * read DHT22 sensor values                                      *
  *****************************************************************/
 static void fetchSensorDHT(String& s) {
@@ -3971,6 +4018,29 @@ static void initSPS30() {
 }
 
 /*****************************************************************
+ Init Micro SD card logger
+ *****************************************************************/
+static void initSD(){
+	delay(1000);
+
+	if (SD,begin(chipSelect)){
+		serial.println("Micro SD Logger initialized.");
+		else {
+			serial.println("MicroSD not initialized.");
+		}
+	}
+
+	sensor_readings = SD.open("sensor_readings.csv, FILE_WRITE");
+
+		if (sensor_readings) {
+			serial.println("Writing to sensor_readings.csv...");
+			else {
+				serial.println("error!!");
+			}
+		}
+}
+
+/*****************************************************************
    Init DNMS - Digital Noise Measurement Sensor
  *****************************************************************/
 static void initDNMS() {
@@ -4101,6 +4171,10 @@ static void logEnabledAPIs() {
 		debug_outln_info(F("Serial as CSV"));
 	}
 
+	if (cfg::send2sd) {
+		debug_outln_info(F("Log to sd"));
+	}
+
 	if (cfg::send2custom) {
 		debug_outln_info(F("custom API"));
 	}
@@ -4208,6 +4282,11 @@ static unsigned long sendDataToOptionalApis(const String &data) {
 		send_csv(data);
 	}
 
+	if (cfg::send2sd) {
+		debug_outln_info(F("## Logging to SD: "));
+		send_csv(data);
+	}
+
 	return sum_send_time;
 }
 
@@ -4261,6 +4340,15 @@ void setup(void) {
 	setup_webserver();
 	createLoggerConfigs();
 	debug_outln_info(F("\nChipId: "), esp_chipid);
+
+	if (cfg::sd_read) {
+		serialSD->begin(9600);
+		serial.print("Initializing SD...");
+
+		else{
+			serial.println("Error initializing SD...");
+			}
+	}
 
 	if (cfg::gps_read) {
 #if defined(ESP8266)

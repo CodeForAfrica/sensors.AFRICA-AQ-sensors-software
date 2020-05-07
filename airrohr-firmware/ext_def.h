@@ -28,6 +28,7 @@ const char WWW_PASSWORD[] PROGMEM = "feinstaub";
 #define SEND2INFLUX 0
 #define SEND2LORA 0
 #define SEND2CSV 0
+#define SEND2SD 1
 #define SEND2CUSTOM 0
 
 // OpenSenseMap
@@ -127,6 +128,12 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 // define serial interface pins for GPS modules
 #define GPS_SERIAL_RX D5
 #define GPS_SERIAL_TX D6
+
+// define pins for the micro_sd logger shield
+#define SD_SCK D5
+#define SD_MISO D6
+#define SD_MOSI D7
+#define SD_ChipSelect D8
 
 // define DHT pins, while reading via the PCF8574
 #define DHT_PIN 2 // pin of the PCF8574 DHT is connected to
