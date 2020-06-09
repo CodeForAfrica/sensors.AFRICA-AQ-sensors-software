@@ -1,5 +1,7 @@
 #include <Arduino.h>
 #include "DHT.h"
+#include <SoftwareSerial.h>
+#include "TinyGPS++.h"
 
 #define ONEWIRE_PIN 2
 #define DHT_TYPE DHT22
@@ -38,7 +40,7 @@ void setup() {
 
   Serial.begin(9600);
   dht.begin();
-  
+
 }
 
 void loop() {
