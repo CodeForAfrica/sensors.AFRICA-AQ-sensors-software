@@ -122,16 +122,16 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 #define PM_SERIAL_TX D4
 
 // define pins for I2C
-#define I2C_PIN_SCL D2
+#define I2C_PIN_SCL D0
 #define I2C_PIN_SDA D1
 
 // define serial interface pins for GPS modules
 #define GPS_SERIAL_RX D2
-#define GPS_SERIAL_TX D1
+#define GPS_SERIAL_TX D3
 
 // define pins for RTC I2C interface
 #define RTC_PIN_SDA D1
-#define RTC_PIN_SCL D2
+#define RTC_PIN_SCL D0
 
 // define pins for the micro_sd logger shield
 #define SD_SCK D5
@@ -141,7 +141,7 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 
 // define pins for the PCF8574P gpio expander
 #define SDA D1
-#define SCL D2
+#define SCL D0
 #define PCF8574_ADDRESS 0x20
 
 // PPD42NS, the cheaper version of the particle sensor
