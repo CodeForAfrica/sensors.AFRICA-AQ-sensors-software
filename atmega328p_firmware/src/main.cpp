@@ -17,11 +17,26 @@
  *****************************************************************/
 DHT dht(ONEWIRE_PIN, DHT_TYPE);
 
+/*****************************************************************
+ *  GPS DECLARATION
+ * ****************************************************************/
+SoftwareSerial serialGPS(GPS_TX_PIN,GPS_RX_PIN);
+TinyGPSPlus gps;
+
 /******************************************************************
  *  DHT VARIABLES
  * ***************************************************************/
 float dht_humidity = 0.0;
 float dht_temperature = 0.0;
+
+/******************************************************************
+ *  GPS VARIABLES
+ * ****************************************************************/
+double last_value_GPS_lat = -200.0;
+double last_value_GPS_lon = -200.0;
+double last_value_GPS_alt = -1000.0;
+String last_value_GPS_date;
+String last_value_GPS_time;
 
 /*****************************************************
  * READ DHT SENSOR VALUES
@@ -45,7 +60,11 @@ void fetchSensorDHT(float &t, float &h){
 void setup() {
 
   Serial.begin(9600);
+  serialGPS.begin(9600); //set GPS baudrate
   dht.begin();
+
+  Serial.print(F("Testing TinyGPS++ library v. "));
+  Serial.println(TinyGPSPlus::libraryVersion());
 
 }
 
