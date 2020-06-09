@@ -1,5 +1,0 @@
-# cp this to config.sh and adapt values
-# your token here
-API_TOKEN='YOURTOKENHERE'
-# your sensorids here (note: not nodeid)
-SENSOR_IDS='01 02'

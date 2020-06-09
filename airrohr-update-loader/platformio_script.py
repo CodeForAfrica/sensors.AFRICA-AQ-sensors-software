@@ -1,1 +1,0 @@
-../airrohr-firmware/platformio_script.py
