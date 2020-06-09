@@ -122,6 +122,16 @@ void setup() {
 }
 
 void loop() {
+	while (serialGPS.available() > 0){
+		if (gps.encode(serialGPS.read())){
+			fetchSensorGPS();
+		}
+	}
+
+ 	 if (millis() > 5000 && gps.charsProcessed() < 10) {
+		  Serial.println(F("No GPS detected: check wiring."));
+		  while(true);
+		  }
 
   fetchSensorDHT(dht_temperature,dht_humidity);
 
