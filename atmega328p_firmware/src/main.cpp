@@ -119,7 +119,7 @@ String package_payload(){
   String message;
 
 	message+="DHT#"+String(dht_temperature)+","+String(dht_humidity)+"*";
-	message+="GPS#"+String(last_value_GPS_lat,6)+","+String(last_value_GPS_lon,6)+","+String(last_value_GPS_alt)+","+last_value_GPS_date+","+last_value_GPS_time+"*";
+	message+="GPS#"+String(last_value_GPS_lat,6)+","+String(last_value_GPS_lon,6)+","+String(last_value_GPS_alt)+","+last_value_GPS_date+","+last_value_GPS_time+"*&";
   
   return message;
 }
