@@ -17,6 +17,11 @@
  *****************************************************************/
 DHT dht(ONEWIRE_PIN, DHT_TYPE);
 
+/******************************************************************
+ *  NodeMCU SoftwareSerial DECLARATION
+ * ****************************************************************/
+SoftwareSerial NodeMCU(10,11);
+
 /*****************************************************************
  *  GPS DECLARATION
  * ****************************************************************/
@@ -38,6 +43,7 @@ double last_value_GPS_alt = -1000.0;
 String last_value_GPS_date;
 String last_value_GPS_time;
 
+
 /*****************************************************
  * READ DHT SENSOR VALUES
  ********************************************************/
@@ -52,7 +58,7 @@ void fetchSensorDHT(float &t, float &h){
 			h = dht.readHumidity();
 		}
 		if (isnan(t) || isnan(h)) {
-			Serial.println(F("DHT11/DHT22 read failed"));
+		Serial.println(F("DHT11/DHT22 read failed"));
 		}
 }
 
@@ -62,7 +68,8 @@ void fetchSensorDHT(float &t, float &h){
 
 void fetchSensorGPS()
 {
-  if (gps.location.isUpdated()) {
+     
+ 	if (gps.location.isUpdated()) {
 		if (gps.location.isValid()) {
 			last_value_GPS_lat = gps.location.lat();
 			last_value_GPS_lon = gps.location.lng();
@@ -78,6 +85,7 @@ void fetchSensorGPS()
 			last_value_GPS_alt = -1000;
 			Serial.println(F("Altitude INVALID"));
 		}
+  }
 		if (gps.date.isValid()) {
 			char gps_date[16];
 			snprintf_P(gps_date, sizeof(gps_date), PSTR("%02d/%02d/%04d"),
@@ -94,26 +102,28 @@ void fetchSensorGPS()
 		} else {
 			Serial.println(F("Time: INVALID"));
 		}
-	}
+	                                            
+}
 
-	Serial.print("LOCATION ");
-	Serial.print(last_value_GPS_lat);
-	Serial.print(" , ");
-	Serial.print(last_value_GPS_lon);
-	Serial.print(" , ");
-	Serial.println(last_value_GPS_alt);
-	Serial.print("Date ");
-	Serial.print(last_value_GPS_date);
-	Serial.print(" TIME ");
-	Serial.println(last_value_GPS_time);
+/***************************************************************
+ * Package Sensor Values for transmission
+ * *************************************************************/
+String package_payload(){
+  String message;
 
+	message+="DHT#"+String(dht_temperature)+","+String(dht_humidity)+"*";
+	message+="GPS#"+String(last_value_GPS_lat,6)+","+String(last_value_GPS_lon,6)+","+String(last_value_GPS_alt)+","+last_value_GPS_date+","+last_value_GPS_time+"*";
+  
+  return message;
 }
 
 
 void setup() {
-
-  Serial.begin(9600);
+	
+	Serial.begin(9600);
+  NodeMCU.begin(9600);
   serialGPS.begin(9600); //set GPS baudrate
+ 
   dht.begin();
 
   Serial.print(F("Testing TinyGPS++ library v. "));
@@ -122,22 +132,29 @@ void setup() {
 }
 
 void loop() {
+
+	
+	NodeMCU.println(package_payload());
+	
+
 	while (serialGPS.available() > 0){
-		if (gps.encode(serialGPS.read())){
-			fetchSensorGPS();
-		}
+		gps.encode(serialGPS.read());
 	}
 
- 	 if (millis() > 5000 && gps.charsProcessed() < 10) {
+  fetchSensorGPS();
+
+ 	if (millis() > 5000 && gps.charsProcessed() < 10) {
 		  Serial.println(F("No GPS detected: check wiring."));
 		  while(true);
-		  }
+	}
 
   fetchSensorDHT(dht_temperature,dht_humidity);
 
   Serial.print("TEMPERATURE : ");
   Serial.print(dht_temperature);
   Serial.print(" HUMIDITY : ");
-  Serial.println(dht_humidity);
+	Serial.println(dht_humidity);
+
+  
 
 }
