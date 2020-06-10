@@ -116,6 +116,7 @@ String SOFTWARE_VERSION(SOFTWARE_VERSION_STR);
 #include "./sps30_i2c.h"
 #include "./dnms_i2c.h"
 #include "./SPH0645.h"
+#include <string.h>
 
 #if defined(INTL_BG)
 #include "intl_bg.h"
