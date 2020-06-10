@@ -144,6 +144,10 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 #define SCL D2
 #define PCF8574_ADDRESS 0x20
 
+//define atmega328p pins
+#define ATMEGA_RX D3
+#define ATMEGA_TX D4
+
 // PPD42NS, the cheaper version of the particle sensor
 #define PPD_PIN_PM1 GPS_SERIAL_TX
 #define PPD_PIN_PM2 GPS_SERIAL_RX
@@ -152,6 +156,8 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 #define I2SI_DATA         12    // I2S data on GPIO12
 #define I2SI_BCK          13    // I2S clk on GPIO13
 #define I2SI_WS           14    // I2S select on GPIO14
+
+
 
 #endif
 
@@ -216,6 +222,9 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 #define PPD_PIN_PM1 GPS_SERIAL_TX
 #define PPD_PIN_PM2 GPS_SERIAL_RX
 #endif
+
+//ATMEGA328P 
+#define BUFFER_SIZE 256
 
 //SPH0645 MEMS Microphone
 #define SPHO645_READ  1
