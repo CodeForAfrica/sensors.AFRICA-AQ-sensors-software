@@ -111,23 +111,23 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 //  pin assignments for NodeMCU V2 board
 #if defined(ESP8266)
 // define pin for one wire sensors
-#define ONEWIRE_PIN D4
+#define ONEWIRE_PIN D0
 
 // define serial interface pins for particle sensors
 // Serial confusion: These definitions are based on SoftSerial
 // TX (transmitting) pin on one side goes to RX (receiving) pin on other side
 // SoftSerial RX PIN is D1 and goes to SDS TX
 // SoftSerial TX PIN is D2 and goes to SDS RX
-#define PM_SERIAL_RX D3
-#define PM_SERIAL_TX D4
+#define PM_SERIAL_RX D0
+#define PM_SERIAL_TX D0
 
 // define pins for I2C
 #define I2C_PIN_SCL D2
 #define I2C_PIN_SDA D1
 
 // define serial interface pins for GPS modules
-#define GPS_SERIAL_RX D2
-#define GPS_SERIAL_TX D1
+#define GPS_SERIAL_RX D0
+#define GPS_SERIAL_TX D0
 
 // define pins for RTC I2C interface
 #define RTC_PIN_SDA D1

@@ -353,6 +353,11 @@ SoftwareSerial* serialGPS;
 #define serialGPS (&(Serial2))
 #endif
 
+/****************************************************************
+ *  ATMEGA328P DECLARATION
+ * **************************************************************/
+SoftwareSerial atmega328p;
+
 /*****************************************************************
  * DHT declaration                                               *
  *****************************************************************/
@@ -496,6 +501,10 @@ float value_SPS30_TS = 0.0;
 
 //Variable to store SPH0645 Mic value
 float value_SPH0645 = 0.0;
+
+//atmega328p variables
+char atmega328p_receive_buffer[BUFFER_SIZE];
+int buffer_position = 0;
 
 
 uint16_t SPS30_measurement_count = 0;
@@ -4354,11 +4363,21 @@ static unsigned long sendDataToOptionalApis(const String &data) {
 }
 
 /*****************************************************************
+ * CLEAR ATMEGA328P BUFFER
+ * ***************************************************************/
+void clear_buffer(){
+	for(int i = 0; i < BUFFER_SIZE ; i++){
+		atmega328p_receive_buffer[i] = 0x00;
+	}
+}
+
+/*****************************************************************
  * The Setup                                                     *
  *****************************************************************/
 
 void setup(void) {
 	Serial.begin(9600);					// Output to Serial at 9600 baud
+	atmega328p.begin(9600,SWSERIAL_8N1,ATMEGA_RX,ATMEGA_TX,false,256);
 	
 #if defined(ESP8266)
 	serialSDS.begin(9600, SWSERIAL_8N1, PM_SERIAL_RX, PM_SERIAL_TX);
@@ -4515,6 +4534,17 @@ void loop(void) {
 		}
 	}
 
+	while((atmega328p.available() > 0) && (buffer_position < BUFFER_SIZE)){
+		atmega328p_receive_buffer[buffer_position] = atmega328p.read();
+		if(atmega328p_receive_buffer[buffer_position] == '&'){
+			Serial.println(atmega328p_receive_buffer);
+			clear_buffer();
+			buffer_position = 0;
+			break;
+		}
+		buffer_position++;
+	}
+
 	if (cfg::ppd_read) {
 		fetchSensorPPD(result_PPD);
 	}
@@ -4522,6 +4552,7 @@ void loop(void) {
 
 	if (cfg::rtc_read) {
 		DateTime now = rtc.now();
+		
 		debug_outln_info("The RTC time is: ");
 		Serial.print(now.year(), DEC);
 		Serial.print('/');
@@ -4535,7 +4566,8 @@ void loop(void) {
 		Serial.print(':');
 		Serial.print(now.second(), DEC);
 		Serial.println();
-		delay(5000);
+		
+		
   }
   
 	if(cfg::sph0645_read){
