@@ -3,6 +3,8 @@
 #include <SoftwareSerial.h>
 #include "TinyGPS++.h"
 
+#define PAYLOAD_INTERVAL 10000
+
 #define ONEWIRE_PIN 2
 #define DHT_TYPE DHT22
 
@@ -43,6 +45,11 @@ double last_value_GPS_alt = -1000.0;
 String last_value_GPS_date;
 String last_value_GPS_time;
 
+/*****************************************************************
+ * Payload variables
+ * **************************************************************/
+
+uint32_t payload_time = 0;
 
 /*****************************************************
  * READ DHT SENSOR VALUES
@@ -133,8 +140,10 @@ void setup() {
 
 void loop() {
 
+	if((millis() - payload_time) > PAYLOAD_INTERVAL){
+		NodeMCU.println(package_payload());
+	}
 	
-	NodeMCU.println(package_payload());
 	
 
 	while (serialGPS.available() > 0){
