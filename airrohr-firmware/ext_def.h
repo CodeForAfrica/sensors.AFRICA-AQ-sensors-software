@@ -145,8 +145,8 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 #define PCF8574_ADDRESS 0x20
 
 //define atmega328p pins
-#define ATMEGA_RX D3
-#define ATMEGA_TX D4
+#define ATMEGA_RX D4
+#define ATMEGA_TX D3
 
 // PPD42NS, the cheaper version of the particle sensor
 #define PPD_PIN_PM1 GPS_SERIAL_TX
