@@ -505,6 +505,7 @@ float value_SPH0645 = 0.0;
 //atmega328p variables
 char atmega328p_receive_buffer[BUFFER_SIZE];
 int buffer_position = 0;
+String atmega_payload;
 
 
 uint16_t SPS30_measurement_count = 0;
@@ -4537,13 +4538,17 @@ void loop(void) {
 	while((atmega328p.available() > 0) && (buffer_position < BUFFER_SIZE)){
 		atmega328p_receive_buffer[buffer_position] = atmega328p.read();
 		if(atmega328p_receive_buffer[buffer_position] == '&'){
-			Serial.println(atmega328p_receive_buffer);
+			yield();
+			atmega_payload = atmega328p_receive_buffer;
 			clear_buffer();
 			buffer_position = 0;
 			break;
 		}
 		buffer_position++;
 	}
+
+	//print received payload
+	Serial.println(atmega_payload);
 
 	if (cfg::ppd_read) {
 		fetchSensorPPD(result_PPD);
