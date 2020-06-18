@@ -3,7 +3,7 @@
 #include <SoftwareSerial.h>
 #include "TinyGPS++.h"
 
-#define PAYLOAD_INTERVAL 10000
+#define GPS_SAMPLE_DURATION 1000
 
 #define ONEWIRE_PIN 2
 #define DHT_TYPE DHT22
@@ -41,6 +41,7 @@ TinyGPSPlus gps;
  * ***************************************************************/
 float dht_humidity = 0.0;
 float dht_temperature = 0.0;
+bool read_dht = false;
 
 /******************************************************************
  *  GPS VARIABLES
@@ -51,11 +52,34 @@ double last_value_GPS_alt = -1000.0;
 String last_value_GPS_date;
 String last_value_GPS_time;
 
+bool read_gps = false;
+uint64_t gps_time = 0;
+
 /*****************************************************************
  * Payload variables
  * **************************************************************/
-
+String received_command;
 uint32_t payload_time = 0;
+
+
+
+/****************************************************************
+ * SEND SERIAL DATA
+ * **************************************************************/
+void send_serial_data(String data){
+	NodeMCU.println(data);
+}
+
+
+/***************************************************************
+ * Package DHT Sensor Values for transmission
+ * *************************************************************/
+String package_DHT_payload(){
+  String dht_data;
+  dht_data = "DHT#"+String(dht_temperature)+","+String(dht_humidity)+"*";
+  return dht_data;
+}
+
 
 /*****************************************************
  * READ DHT SENSOR VALUES
@@ -73,6 +97,20 @@ void fetchSensorDHT(float &t, float &h){
 		if (isnan(t) || isnan(h)) {
 		Serial.println(F("DHT11/DHT22 read failed"));
 		}
+
+	String dht_values = package_DHT_payload();
+	send_serial_data(dht_values);
+	read_dht = false;
+
+}
+
+/***************************************************************
+ * Package  GPS Sensor Values for transmission
+ * *************************************************************/
+String package_GPS_payload(){
+  String gps_data;
+  gps_data ="GPS#"+String(last_value_GPS_lat,6)+","+String(last_value_GPS_lon,6)+","+String(last_value_GPS_alt)+","+last_value_GPS_date+","+last_value_GPS_time+"*&";
+  return gps_data;
 }
 
 /*****************************************************************
@@ -98,7 +136,7 @@ void fetchSensorGPS()
 			last_value_GPS_alt = -1000;
 			Serial.println(F("Altitude INVALID"));
 		}
-  }
+  	}
 		if (gps.date.isValid()) {
 			char gps_date[16];
 			snprintf_P(gps_date, sizeof(gps_date), PSTR("%02d/%02d/%04d"),
@@ -115,60 +153,83 @@ void fetchSensorGPS()
 		} else {
 			Serial.println(F("Time: INVALID"));
 		}
+
+
+		String gps_values = package_GPS_payload();
+		send_serial_data(gps_values);
+		read_gps = false;
 	                                            
 }
 
-/***************************************************************
- * Package Sensor Values for transmission
- * *************************************************************/
-String package_payload(){
-  String message;
 
-	message+="DHT#"+String(dht_temperature)+","+String(dht_humidity)+"*";
-	message+="GPS#"+String(last_value_GPS_lat,6)+","+String(last_value_GPS_lon,6)+","+String(last_value_GPS_alt)+","+last_value_GPS_date+","+last_value_GPS_time+"*&";
-  
-  return message;
-}
+
 
 
 void setup() {
 	
+	pinMode(NodeMCU_RX, OUTPUT);
+	pinMode(GPS_RX_PIN, OUTPUT);
+	
+	pinMode(NodeMCU_TX, INPUT);
+	pinMode(GPS_TX_PIN, INPUT);
+	
+	
 	Serial.begin(9600);
-  NodeMCU.begin(9600);
-  serialGPS.begin(9600); //set GPS baudrate
- 
-  dht.begin();
-
-  Serial.print(F("Testing TinyGPS++ library v. "));
-  Serial.println(TinyGPSPlus::libraryVersion());
+	NodeMCU.begin(9600);
+	serialGPS.begin(9600); //set GPS baudrate
+	dht.begin();
+	
+	Serial.print(F("Testing TinyGPS++ library v. "));
+  	Serial.println(TinyGPSPlus::libraryVersion());
 
 }
 
 void loop() {
 
-	if((millis() - payload_time) > PAYLOAD_INTERVAL){
-		NodeMCU.println(package_payload());
+	NodeMCU.listen();
+	delay(50);
+
+	while(NodeMCU.available() > 0){
+		received_command = NodeMCU.readString();
+		Serial.println(received_command);
+			if(received_command.indexOf("fetchSensorGPS") >= 0){
+					read_gps = true;
+			}
+			if(received_command.indexOf("fetchSensorDHT") >= 0){
+					read_dht = true;
+			}
+		}
+
+
+
+	if(read_gps){
+
+		serialGPS.listen();
+		delay(50);
+		gps_time = millis();
+		
+		while((millis() - gps_time) < GPS_SAMPLE_DURATION){
+			while (serialGPS.available() > 0){
+				gps.encode(serialGPS.read());
+			}
+		}
+		
+		fetchSensorGPS();
 	}
-	
-	
 
-	while (serialGPS.available() > 0){
-		gps.encode(serialGPS.read());
+	if(read_dht){
+		
+		fetchSensorDHT(dht_temperature,dht_humidity);
+		
 	}
 
-  fetchSensorGPS();
 
- 	if (millis() > 5000 && gps.charsProcessed() < 10) {
-		  Serial.println(F("No GPS detected: check wiring."));
-		  while(true);
-	}
+ 
 
-  fetchSensorDHT(dht_temperature,dht_humidity);
-
-  Serial.print("TEMPERATURE : ");
-  Serial.print(dht_temperature);
-  Serial.print(" HUMIDITY : ");
-	Serial.println(dht_humidity);
+ 	Serial.print("TEMPERATURE : ");
+  	Serial.print(dht_temperature);
+  	Serial.print(" HUMIDITY : ");
+  	Serial.println(dht_humidity);
 
   
 
