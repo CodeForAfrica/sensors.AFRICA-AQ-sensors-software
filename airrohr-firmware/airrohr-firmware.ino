@@ -352,6 +352,11 @@ SoftwareSerial* serialGPS;
 #define serialGPS (&(Serial2))
 #endif
 
+
+/****************************************************************
+ * ATMEGA328P declaration
+ * **************************************************************/
+SoftwareSerial atmega328p;
 /*****************************************************************
  * DHT declaration                                               *
  *****************************************************************/
@@ -4358,6 +4363,7 @@ static unsigned long sendDataToOptionalApis(const String &data) {
 
 void setup(void) {
 	Serial.begin(9600);					// Output to Serial at 9600 baud
+	atmega328p.begin(9600, SWSERIAL_8N1, D3, D4,false,256);
 	
 #if defined(ESP8266)
 	serialSDS.begin(9600, SWSERIAL_8N1, PM_SERIAL_RX, PM_SERIAL_TX);
