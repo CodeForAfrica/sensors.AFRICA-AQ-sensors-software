@@ -501,6 +501,8 @@ float value_SPS30_TS = 0.0;
 //Variable to store SPH0645 Mic value
 float value_SPH0645 = 0.0;
 
+String dht_data;
+
 
 uint16_t SPS30_measurement_count = 0;
 unsigned long SPS30_read_counter = 0;
@@ -2659,6 +2661,8 @@ static void fetchSensorDHT(String& s) {
 	last_value_DHT_T = -128;
 	last_value_DHT_H = -1;
 
+	/*
+
 	int count = 0;
 	const int MAX_ATTEMPTS = 5;
 	while ((count++ < MAX_ATTEMPTS)) {
@@ -2679,6 +2683,13 @@ static void fetchSensorDHT(String& s) {
 			break;
 		}
 	}
+	*/
+
+	atmega328p.println("fetchSensorDHT");
+	delay(500);
+
+	Serial.println(dht_data);
+
 	debug_outln_info(FPSTR(DBG_TXT_SEP));
 
 	debug_outln_verbose(FPSTR(DBG_TXT_END_READING), FPSTR(SENSORS_DHT22));

@@ -118,20 +118,20 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 // TX (transmitting) pin on one side goes to RX (receiving) pin on other side
 // SoftSerial RX PIN is D1 and goes to SDS TX
 // SoftSerial TX PIN is D2 and goes to SDS RX
-#define PM_SERIAL_RX D1
-#define PM_SERIAL_TX D2
+#define PM_SERIAL_RX D0
+#define PM_SERIAL_TX D0
 
 // define pins for I2C
-#define I2C_PIN_SCL D4
-#define I2C_PIN_SDA D3
+#define I2C_PIN_SCL D2
+#define I2C_PIN_SDA D1
 
 // define serial interface pins for GPS modules
 #define GPS_SERIAL_RX D5
 #define GPS_SERIAL_TX D6
 
 // define pins for RTC I2C interface
-#define RTC_PIN_SDA D3
-#define RTC_PIN_SCL D4
+#define RTC_PIN_SDA D1
+#define RTC_PIN_SCL D2
 
 // define pins for the micro_sd logger shield
 #define SD_SCK D5
@@ -140,7 +140,7 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 #define SD_chipSelect D8
 
 // define DHT pins, while reading via the PCF8574
-#define DHT_PIN 2 // pin of the PCF8574 DHT is connected to
+#define DHT_PIN D0// pin of the PCF8574 DHT is connected to
 #define PCF8574_ADDRESS 0x02
 
 // PPD42NS, the cheaper version of the particle sensor
