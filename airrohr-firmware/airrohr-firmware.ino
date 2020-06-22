@@ -360,7 +360,7 @@ SoftwareSerial atmega328p;
 /*****************************************************************
  * DHT declaration                                               *
  *****************************************************************/
-DHT dht(DHT_PIN, DHT_TYPE, PCF8574_ADDRESS);
+DHT dht(ONEWIRE_PIN, DHT_TYPE);
 
 /*****************************************************************
  * HTU21D declaration                                            *
@@ -3503,7 +3503,7 @@ void init_RTC()
 	{
 		// sets time to the date this sketch was compiled
 		 rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-		// Set explicit time for example 19th March 2020 at 12 noon.
+		// Set explicit time for example 19th May 2020 at 12 noon.
 		// rtc.adjust(DateTime(2020, 5, 19, 12, 00, 00));
 	}
 }
