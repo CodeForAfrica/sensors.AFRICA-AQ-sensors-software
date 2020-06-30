@@ -501,7 +501,13 @@ float value_SPS30_TS = 0.0;
 //Variable to store SPH0645 Mic value
 float value_SPH0645 = 0.0;
 
+//DHT variables
 String dht_data;
+struct DHT_values{
+	float Temperature;
+	float Humidity;
+};
+
 
 
 uint16_t SPS30_measurement_count = 0;
@@ -524,6 +530,16 @@ double last_value_GPS_lon = -200.0;
 double last_value_GPS_alt = -1000.0;
 String last_value_GPS_date;
 String last_value_GPS_time;
+String gps_data;
+
+struct GPS_values{
+	double latitude;
+	double longitude;
+	double altitude;
+	String date;
+	String time;
+};
+
 String last_data_string;
 int last_signal_strength;
 
@@ -2651,6 +2667,28 @@ static void send_csv(const String& data) {
 	}
 }
 
+
+DHT_values parse_dht_payload(String dht_data){
+
+	DHT_values dht_values;
+
+  if(dht_data.indexOf("DHT") >= 0){
+    int index = dht_data.indexOf("#");
+    int index1 = dht_data.indexOf(",");
+    int index2 = dht_data.indexOf("*");
+
+    String temperature_data = dht_data.substring((index+1),index1);
+    String humidity_data = dht_data.substring((index1+1),index2);
+
+	dht_values.Temperature = temperature_data.toFloat();
+	dht_values.Humidity = humidity_data.toFloat();
+	
+	}
+
+	return dht_values;
+
+}
+
 /*****************************************************************
  * read DHT22 sensor values                                      *
  *****************************************************************/
@@ -2662,7 +2700,6 @@ static void fetchSensorDHT(String& s) {
 	last_value_DHT_H = -1;
 
 	/*
-
 	int count = 0;
 	const int MAX_ATTEMPTS = 5;
 	while ((count++ < MAX_ATTEMPTS)) {
@@ -2685,10 +2722,25 @@ static void fetchSensorDHT(String& s) {
 	}
 	*/
 
+	//request DHT values from atmega328p
 	atmega328p.println("fetchSensorDHT");
-	delay(500);
+	delay(2000);
 
-	Serial.println(dht_data);
+	DHT_values dht_values;
+
+	while(atmega328p.available() > 0){
+		dht_data = atmega328p.readString();
+
+		if(gps_data.indexOf("DHT") >= 0){
+			dht_values = parse_dht_payload(dht_data);
+			Serial.println(dht_data);
+			last_value_DHT_T = dht_values.Temperature;
+			last_value_DHT_H = dht_values.Humidity;
+		}
+	}
+
+	add_Value2Json(s, F("temperature"), FPSTR(DBG_TXT_TEMPERATURE), last_value_DHT_T);
+	add_Value2Json(s, F("humidity"), FPSTR(DBG_TXT_HUMIDITY), last_value_DHT_H);
 
 	debug_outln_info(FPSTR(DBG_TXT_SEP));
 
@@ -3390,6 +3442,37 @@ static void fetchSensorDNMS(String& s) {
 	debug_outln_verbose(FPSTR(DBG_TXT_END_READING), FPSTR(SENSORS_DNMS));
 }
 
+
+GPS_values parse_gps_payload(String gps_data){
+
+	GPS_values gps_values;
+
+  if(gps_data.indexOf("GPS") >= 0){
+    int index = gps_data.indexOf("#");
+    int index1 = gps_data.indexOf(",");
+    int index2 = gps_data.indexOf(",",index1+1);
+    int index3 = gps_data.indexOf(",",index2+1);
+    int index4 = gps_data.indexOf(",",index3+1);
+    int index5 = gps_data.indexOf("*");
+
+     String latitude = gps_data.substring((index+1),index1);
+     String longitude = gps_data.substring((index1+1),index2);
+     String altitide = gps_data.substring((index2+1),index3);
+     String date = gps_data.substring((index3+1),index4);
+     String time = gps_data.substring((index4+1),index5);
+
+    gps_values.latitude = latitude.toFloat();
+	gps_values.longitude = longitude.toFloat();
+	gps_values.altitude = latitude.toFloat();
+	gps_values.date = date;
+	gps_values.time = time;
+	
+	}
+  
+  return gps_values;
+}
+
+
 /*****************************************************************
  * read GPS sensor values                                        *
  *****************************************************************/
@@ -3430,7 +3513,29 @@ static void fetchSensorGPS(String& s) {
 		}
 	}
 
+	//request GPS values from atmega328p
+	atmega328p.println("fetchSensorGPS");
+	delay(3000);
+
+	GPS_values gps_values;
+
+	while(atmega328p.available() > 0){
+		gps_data = atmega328p.readString();
+		if(gps_data.indexOf("GPS") >= 0){
+				Serial.println(gps_data);
+				gps_values = parse_gps_payload(gps_data);
+				last_value_GPS_lat = gps_values.latitude;
+				last_value_GPS_lon = gps_values.longitude;
+				last_value_GPS_alt = gps_values.altitude;
+				last_value_GPS_date = gps_values.date;
+				last_value_GPS_time = gps_values.time;
+			}
+	}
+
+		
+		
 	if (send_now) {
+		
 		debug_outln_info(F("Lat: "), String(last_value_GPS_lat, 6));
 		debug_outln_info(F("Lng: "), String(last_value_GPS_lon, 6));
 		debug_outln_info(F("Date: "), last_value_GPS_date);
@@ -3444,10 +3549,7 @@ static void fetchSensorGPS(String& s) {
 		debug_outln_info(FPSTR(DBG_TXT_SEP));
 	}
 
-	if ( count_sends > 0 && gps.charsProcessed() < 10) {
-		debug_outln_error(F("No GPS data received: check wiring"));
-		gps_init_failed = true;
-	}
+
 
 	debug_outln_verbose(FPSTR(DBG_TXT_END_READING), "GPS");
 }
@@ -4374,7 +4476,7 @@ static unsigned long sendDataToOptionalApis(const String &data) {
 
 void setup(void) {
 	Serial.begin(9600);					// Output to Serial at 9600 baud
-	atmega328p.begin(9600, SWSERIAL_8N1, D3, D4,false,256);
+	atmega328p.begin(9600, SWSERIAL_8N1,ATMEGA_TX,ATMEGA_RX,false,256);
 	
 #if defined(ESP8266)
 	serialSDS.begin(9600, SWSERIAL_8N1, PM_SERIAL_RX, PM_SERIAL_TX);
@@ -4457,7 +4559,7 @@ void setup(void) {
  *****************************************************************/
 void loop(void) {
 	String result_PPD, result_SDS, result_PMS, result_HPM;
-	String result_GPS, result_DNMS, result_SPH0645;
+	String result_GPS, result_DNMS, result_SPH0645,result_DHT;
 
 	unsigned sum_send_time = 0;
 
@@ -4535,7 +4637,6 @@ void loop(void) {
 		fetchSensorPPD(result_PPD);
 	}
 
-
 	if (cfg::rtc_read) {
 		DateTime now = rtc.now();
 		debug_outln_info("The RTC time is: ");
@@ -4573,11 +4674,7 @@ void loop(void) {
 		}
 	}
 
-	if (cfg::gps_read && !gps_init_failed) {
-		// process serial GPS data..
-		while (serialGPS->available() > 0) {
-			gps.encode(serialGPS->read());
-		}
+	if (cfg::gps_read) {
 
 		if ((msSince(starttime_GPS) > SAMPLETIME_GPS_MS) || send_now) {
 			// getting GPS coordinates
@@ -4591,6 +4688,8 @@ void loop(void) {
 		display_values();
 		last_display_millis = act_milli;
 	}
+
+	
 
 	server.handleClient();
 	yield();
