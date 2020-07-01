@@ -462,7 +462,7 @@ void loop() {
 		Serial.println(received_command);
 			if(received_command.indexOf("fetchSensorGPS") >= 0){
 					read_gps = true;
-			}
+			} 
 			if(received_command.indexOf("fetchSensorDHT") >= 0){
 					read_dht = true;
 			}
