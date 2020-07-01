@@ -469,6 +469,14 @@ int pms_pm10_min = 20000;
 int pms_pm25_max = 0;
 int pms_pm25_min = 20000;
 
+String pms_data;
+
+struct PMS_values{
+	float pm1;
+	float pm10;
+	float pm25;
+};
+
 int hpm_pm10_sum = 0;
 int hpm_pm25_sum = 0;
 int hpm_val_count = 0;
@@ -2667,6 +2675,9 @@ static void send_csv(const String& data) {
 	}
 }
 
+/*****************************************************************
+ * Parse DHT payload from Atmega328p                              *
+ *****************************************************************/
 
 DHT_values parse_dht_payload(String dht_data){
 
@@ -2724,19 +2735,16 @@ static void fetchSensorDHT(String& s) {
 
 	//request DHT values from atmega328p
 	atmega328p.println("fetchSensorDHT");
-	delay(2000);
-
+	delay(3000);
+	
 	DHT_values dht_values;
-
 	while(atmega328p.available() > 0){
-		dht_data = atmega328p.readString();
 
-		if(gps_data.indexOf("DHT") >= 0){
-			dht_values = parse_dht_payload(dht_data);
-			Serial.println(dht_data);
-			last_value_DHT_T = dht_values.Temperature;
-			last_value_DHT_H = dht_values.Humidity;
-		}
+		dht_data = atmega328p.readString();
+		dht_values = parse_dht_payload(dht_data);
+		//Serial.println(dht_data);
+		last_value_DHT_T = dht_values.Temperature;
+		last_value_DHT_H = dht_values.Humidity;
 	}
 
 	add_Value2Json(s, F("temperature"), FPSTR(DBG_TXT_TEMPERATURE), last_value_DHT_T);
@@ -2965,10 +2973,38 @@ static void fetchSensorSDS(String& s) {
 	debug_outln_verbose(FPSTR(DBG_TXT_END_READING), FPSTR(SENSORS_SDS011));
 }
 
+
+PMS_values parse_pms_payload(String pms_data){
+
+	PMS_values pms_values;
+
+	if(pms_data.indexOf("PMS") >= 0){
+		
+		int index = pms_data.indexOf("#");
+		int index1 = pms_data.indexOf(",");
+		int index2 = pms_data.indexOf(",",(index1+1));
+		int index3 = pms_data.indexOf("*");
+
+		String _pm1_serial = pms_data.substring((index+1),index1);
+    	String _pm10_serial = pms_data.substring((index1+1),index2);
+		String _pm25_serial = pms_data.substring((index2+1),index3);
+
+		pms_values.pm1 = _pm1_serial.toFloat();
+		pms_values.pm10 = _pm10_serial.toFloat();
+		pms_values.pm25 = _pm25_serial.toFloat();
+
+
+		
+	}
+
+	return pms_values;
+}
 /*****************************************************************
  * read Plantronic PM sensor sensor values                       *
  *****************************************************************/
 static void fetchSensorPMS(String& s) {
+
+	/*
 	char buffer;
 	int value;
 	int len = 0;
@@ -3097,7 +3133,36 @@ static void fetchSensorPMS(String& s) {
 		}
 	}
 
-	if (send_now) {
+*/
+
+if (send_now) {
+
+	atmega328p.println("fetchSensorPMS");
+	delay(2000);
+	PMS_values pms_values;
+
+	while(atmega328p.available() > 0){
+		pms_data = atmega328p.readString();
+		//Serial.println(pms_data);
+		pms_values = parse_pms_payload(pms_data);
+
+		last_value_PMS_P0 = pms_values.pm1;
+		last_value_PMS_P1 = pms_values.pm10;
+		last_value_PMS_P2 = pms_values.pm25;
+
+
+		add_Value2Json(s, F("PMS_P0"), F("PM1:   "), last_value_PMS_P0);
+		add_Value2Json(s, F("PMS_P1"), F("PM10:  "), last_value_PMS_P1);
+		add_Value2Json(s, F("PMS_P2"), F("PM2.5: "), last_value_PMS_P2);
+				
+	}
+
+	debug_outln_verbose(F("PM1 (sec.): "), String(last_value_PMS_P0));
+	debug_outln_verbose(F("PM2.5 (sec.): "), String(last_value_PMS_P2));
+	debug_outln_verbose(F("PM10 (sec.) : "), String(last_value_PMS_P1));
+}
+
+/*
 		last_value_PMS_P0 = -1;
 		last_value_PMS_P1 = -1;
 		last_value_PMS_P2 = -1;
@@ -3130,6 +3195,7 @@ static void fetchSensorPMS(String& s) {
 			is_PMS_running = PMS_cmd(PmSensorCmd::Stop);
 		}
 	}
+	*/
 
 	debug_outln_verbose(FPSTR(DBG_TXT_END_READING), FPSTR(SENSORS_PMSx003));
 }
@@ -3443,6 +3509,9 @@ static void fetchSensorDNMS(String& s) {
 }
 
 
+/*****************************************************************
+ * Parse GPS payload from Atmega328p                              *
+ *****************************************************************/
 GPS_values parse_gps_payload(String gps_data){
 
 	GPS_values gps_values;
@@ -3522,7 +3591,7 @@ static void fetchSensorGPS(String& s) {
 	while(atmega328p.available() > 0){
 		gps_data = atmega328p.readString();
 		if(gps_data.indexOf("GPS") >= 0){
-				Serial.println(gps_data);
+				//Serial.println(gps_data);
 				gps_values = parse_gps_payload(gps_data);
 				last_value_GPS_lat = gps_values.latitude;
 				last_value_GPS_lon = gps_values.longitude;
@@ -4559,7 +4628,7 @@ void setup(void) {
  *****************************************************************/
 void loop(void) {
 	String result_PPD, result_SDS, result_PMS, result_HPM;
-	String result_GPS, result_DNMS, result_SPH0645,result_DHT;
+	String result_GPS, result_DNMS, result_SPH0645;
 
 	unsigned sum_send_time = 0;
 
