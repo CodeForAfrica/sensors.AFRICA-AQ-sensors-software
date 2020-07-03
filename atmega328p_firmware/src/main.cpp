@@ -2,6 +2,9 @@
 #include "DHT.h"
 #include <SoftwareSerial.h>
 #include "TinyGPS++.h"
+#include <WString.h>
+#include <ArduinoJson.h>
+
 
 #define GPS_SAMPLE_DURATION 1000
 
@@ -45,8 +48,10 @@ SoftwareSerial serialSDS(5,4);
 /******************************************************************
  *  DHT VARIABLES
  * ***************************************************************/
-float dht_humidity = 0.0;
-float dht_temperature = 0.0;
+
+float last_value_DHT_T = 0.0;
+float last_value_DHT_H = 0.0;
+
 bool read_dht = false;
 
 /******************************************************************
@@ -88,6 +93,7 @@ enum class PmSensorCmd {
 
 unsigned long starttime;
 unsigned long starttime_SDS;
+unsigned long sampletime_PMS;
 
 int pms_pm1_sum = 0;
 int pms_pm10_sum = 0;
@@ -99,6 +105,8 @@ int pms_pm10_max = 0;
 int pms_pm10_min = 20000;
 int pms_pm25_max = 0;
 int pms_pm25_min = 20000;
+
+bool pms_isOn = false;
 
 
 float last_value_PMS_P0 = -1.0;
@@ -112,6 +120,23 @@ template<typename T, size_t N> constexpr size_t array_num_elements(const T(&)[N]
 }
 
 #define msSince(timestamp_before) (act_milli - (timestamp_before))
+
+/*****************************************************************
+ * add value to json string                                  *
+ *****************************************************************/
+static void add_Value2Json(String& res, const __FlashStringHelper* type, const String& value) {
+	String s;
+
+	s = F("{\"value_type\":\"{t}\",\"value\":\"{v}\"},");
+	s.replace("{t}", String(type));
+	s.replace("{v}", value);
+	res += s;
+}
+
+static void add_Value2Json(String& res, const __FlashStringHelper* type, const __FlashStringHelper* debug_type, const float& value) {
+	
+	add_Value2Json(res, type, String(value));
+}
 
 /****************************************************************
  * SEND SERIAL DATA
@@ -151,16 +176,6 @@ bool PMS_cmd(PmSensorCmd cmd) {
 	return cmd != PmSensorCmd::Stop;
 }
 
-String package_PMS_payload(){
-	
-	String pms_data = "PMS#"+String(last_value_PMS_P0)+","+String(last_value_PMS_P1)+","+String(last_value_PMS_P2)+"*";
-	return pms_data;
-}
-
-void send_PMS_payload(){
-	String pms_payload = package_PMS_payload();
-	send_serial_data(pms_payload);
-}
 
 /*****************************************************************
  * read Plantronic PM sensor sensor values                       *
@@ -177,211 +192,216 @@ void fetchSensorPMS() {
 	bool checksum_ok = false;
 	int frame_len = 24;				// min. frame length
 
-	if (msSince(starttime) < (cfg::sending_intervall_ms - (WARMUPTIME_SDS_MS + READINGTIME_SDS_MS))) {
+	if(pms_isOn == false) {
 		if (is_PMS_running) {
 			is_PMS_running = PMS_cmd(PmSensorCmd::Stop);
 		}
-	} else {
+	} 
+	
+	else {
 		if (! is_PMS_running) {
 			is_PMS_running = PMS_cmd(PmSensorCmd::Start);
 		}
-
+		
+		
 		serialSDS.listen();
        delay(50);
-		while (serialSDS.available() > 0) {
-			buffer = serialSDS.read();
-			
-			value = int(buffer);
-			switch (len) {
-			case 0:
-				if (value != 66) {
-					len = -1;
-				};
-				break;
-			case 1:
-				if (value != 77) {
-					len = -1;
-				};
-				break;
-			case 2:
-				checksum_is = value;
-				break;
-			case 3:
-				frame_len = value + 4;
-				break;
-			case 10:
-				pm1_serial += ( value << 8);
-				break;
-			case 11:
-				pm1_serial += value;
-				break;
-			case 12:
-				pm25_serial = ( value << 8);
-				break;
-			case 13:
-				pm25_serial += value;
-				break;
-			case 14:
-				pm10_serial = ( value << 8);
-				break;
-			case 15:
-				pm10_serial += value;
-				break;
-			case 22:
-				if (frame_len == 24) {
-					checksum_should = ( value << 8 );
-				};
-				break;
-			case 23:
-				if (frame_len == 24) {
-					checksum_should += value;
-				};
-				break;
-			case 30:
-				checksum_should = ( value << 8 );
-				break;
-			case 31:
-				checksum_should += value;
-				break;
-			}
-			if ((len > 2) && (len < (frame_len - 2))) { checksum_is += value; }
-			len++;
-			if (len == frame_len) {
+	   sampletime_PMS = millis();
+	   while((millis() - sampletime_PMS) < (READINGTIME_SDS_MS+WARMUPTIME_SDS_MS)){
+			while (serialSDS.available() > 0) {
+				buffer = serialSDS.read();
 				
-				if (checksum_should == (checksum_is + 143)) {
-					checksum_ok = true;
-				} else {
-					len = 0;
-				};
-				if (checksum_ok) {
-					if ((! isnan(pm1_serial)) && (! isnan(pm10_serial)) && (! isnan(pm25_serial))) {
-						pms_pm1_sum += pm1_serial;
-						pms_pm10_sum += pm10_serial;
-						pms_pm25_sum += pm25_serial;
-						if (pms_pm1_min > pm1_serial) {
-							pms_pm1_min = pm1_serial;
-						}
-						if (pms_pm1_max < pm1_serial) {
-							pms_pm1_max = pm1_serial;
-						}
-						if (pms_pm25_min > pm25_serial) {
-							pms_pm25_min = pm25_serial;
-						}
-						if (pms_pm25_max < pm25_serial) {
-							pms_pm25_max = pm25_serial;
-						}
-						if (pms_pm10_min > pm10_serial) {
-							pms_pm10_min = pm10_serial;
-						}
-						if (pms_pm10_max < pm10_serial) {
-							pms_pm10_max = pm10_serial;
-						}
-					
-						pms_val_count++;
-					}
-					len = 0;
-					checksum_ok = false;
-					pm1_serial = 0;
-					pm10_serial = 0;
-					pm25_serial = 0;
-					checksum_is = 0;
+				value = int(buffer);
+				switch (len) {
+				case 0:
+					if (value != 66) {
+						len = -1;
+					};
+					break;
+				case 1:
+					if (value != 77) {
+						len = -1;
+					};
+					break;
+				case 2:
+					checksum_is = value;
+					break;
+				case 3:
+					frame_len = value + 4;
+					break;
+				case 10:
+					pm1_serial += ( value << 8);
+					break;
+				case 11:
+					pm1_serial += value;
+					break;
+				case 12:
+					pm25_serial = ( value << 8);
+					break;
+				case 13:
+					pm25_serial += value;
+					break;
+				case 14:
+					pm10_serial = ( value << 8);
+					break;
+				case 15:
+					pm10_serial += value;
+					break;
+				case 22:
+					if (frame_len == 24) {
+						checksum_should = ( value << 8 );
+					};
+					break;
+				case 23:
+					if (frame_len == 24) {
+						checksum_should += value;
+					};
+					break;
+				case 30:
+					checksum_should = ( value << 8 );
+					break;
+				case 31:
+					checksum_should += value;
+					break;
 				}
+				if ((len > 2) && (len < (frame_len - 2))) { checksum_is += value; }
+				len++;
+				if (len == frame_len) {
+					
+					if (checksum_should == (checksum_is + 143)) {
+						checksum_ok = true;
+					} else {
+						len = 0;
+					};
+					if (checksum_ok) {
+						if ((! isnan(pm1_serial)) && (! isnan(pm10_serial)) && (! isnan(pm25_serial))) {
+							pms_pm1_sum += pm1_serial;
+							pms_pm10_sum += pm10_serial;
+							pms_pm25_sum += pm25_serial;
+							if (pms_pm1_min > pm1_serial) {
+								pms_pm1_min = pm1_serial;
+							}
+							if (pms_pm1_max < pm1_serial) {
+								pms_pm1_max = pm1_serial;
+							}
+							if (pms_pm25_min > pm25_serial) {
+								pms_pm25_min = pm25_serial;
+							}
+							if (pms_pm25_max < pm25_serial) {
+								pms_pm25_max = pm25_serial;
+							}
+							if (pms_pm10_min > pm10_serial) {
+								pms_pm10_min = pm10_serial;
+							}
+							if (pms_pm10_max < pm10_serial) {
+								pms_pm10_max = pm10_serial;
+							}
+						
+							pms_val_count++;
+						}
+						len = 0;
+						checksum_ok = false;
+						pm1_serial = 0;
+						pm10_serial = 0;
+						pm25_serial = 0;
+						checksum_is = 0;
+					}
+				}
+				
 			}
-			
 		}
 
 	}
 
-if(send_now){
+	if(read_pms){
 
-		last_value_PMS_P0 = -1;
-		last_value_PMS_P1 = -1;
-		last_value_PMS_P2 = -1;
-		if (pms_val_count > 2) {
-			pms_pm1_sum = pms_pm1_sum - pms_pm1_min - pms_pm1_max;
-			pms_pm10_sum = pms_pm10_sum - pms_pm10_min - pms_pm10_max;
-			pms_pm25_sum = pms_pm25_sum - pms_pm25_min - pms_pm25_max;
-			pms_val_count = pms_val_count - 2;
-		}
-		if (pms_val_count > 0) {
-			last_value_PMS_P0 = float(pms_pm1_sum) / float(pms_val_count);
-			last_value_PMS_P1 = float(pms_pm10_sum) / float(pms_val_count);
-			last_value_PMS_P2 = float(pms_pm25_sum) / float(pms_val_count);
-			Serial.println(last_value_PMS_P0);
-			Serial.println(last_value_PMS_P1);
-			Serial.println(last_value_PMS_P2);
+			String s;
+
+			last_value_PMS_P0 = -1;
+			last_value_PMS_P1 = -1;
+			last_value_PMS_P2 = -1;
+			if (pms_val_count > 2) {
+				pms_pm1_sum = pms_pm1_sum - pms_pm1_min - pms_pm1_max;
+				pms_pm10_sum = pms_pm10_sum - pms_pm10_min - pms_pm10_max;
+				pms_pm25_sum = pms_pm25_sum - pms_pm25_min - pms_pm25_max;
+				pms_val_count = pms_val_count - 2;
+			}
+			if (pms_val_count > 0) {
+				last_value_PMS_P0 = float(pms_pm1_sum) / float(pms_val_count);
+				last_value_PMS_P1 = float(pms_pm10_sum) / float(pms_val_count);
+				last_value_PMS_P2 = float(pms_pm25_sum) / float(pms_val_count);
+				Serial.println(last_value_PMS_P0);
+				Serial.println(last_value_PMS_P1);
+				Serial.println(last_value_PMS_P2);
+
+				add_Value2Json(s, F("PMS_P0"), F("PM1:   "), last_value_PMS_P0);
+				add_Value2Json(s, F("PMS_P1"), F("PM10:  "), last_value_PMS_P1);
+				add_Value2Json(s, F("PMS_P2"), F("PM2.5: "), last_value_PMS_P2);
+				send_serial_data(s);
+				
+			}
+			pms_pm1_sum = 0;
+			pms_pm10_sum = 0;
+			pms_pm25_sum = 0;
+			pms_val_count = 0;
+			pms_pm1_max = 0;
+			pms_pm1_min = 20000;
+			pms_pm10_max = 0;
+			pms_pm10_min = 20000;
+			pms_pm25_max = 0;
+			pms_pm25_min = 20000;
 			
-		}
-		pms_pm1_sum = 0;
-		pms_pm10_sum = 0;
-		pms_pm25_sum = 0;
-		pms_val_count = 0;
-		pms_pm1_max = 0;
-		pms_pm1_min = 20000;
-		pms_pm10_max = 0;
-		pms_pm10_min = 20000;
-		pms_pm25_max = 0;
-		pms_pm25_min = 20000;
+			pms_isOn = false;
 
-		if (cfg::sending_intervall_ms > (WARMUPTIME_SDS_MS + READINGTIME_SDS_MS)) {
-			is_PMS_running = PMS_cmd(PmSensorCmd::Stop);
-		}
+			if(pms_isOn == false) {
+				is_PMS_running = PMS_cmd(PmSensorCmd::Stop);
+			}
 
-	}
+			read_pms= false;
+
+		}
 
 }
 
-
-/***************************************************************
- * Package DHT Sensor Values for transmission
- * *************************************************************/
-String package_DHT_payload(){
-  String dht_data;
-  dht_data = "DHT#"+String(dht_temperature)+","+String(dht_humidity)+"*";
-  return dht_data;
-}
 
 
 /*****************************************************
  * READ DHT SENSOR VALUES
  ********************************************************/
-void fetchSensorDHT(float &t, float &h){
+void fetchSensorDHT(){
 
-  	t = dht.readTemperature();
-	  h = dht.readHumidity();
+  	float t = dht.readTemperature();
+	float h = dht.readHumidity();
 
-		if (isnan(t) || isnan(h)) {
-			delay(100);
-			t = dht.readTemperature(false);
-			h = dht.readHumidity();
-		}
-		if (isnan(t) || isnan(h)) {
+	if (isnan(t) || isnan(h)) {
+		delay(100);
+		t = dht.readTemperature(false);
+		h = dht.readHumidity();
+	}
+
+	if (isnan(t) || isnan(h)) {
 		Serial.println(F("DHT11/DHT22 read failed"));
-		}
+	}
 
-	String dht_values = package_DHT_payload();
-	send_serial_data(dht_values);
+	last_value_DHT_T = t;
+	last_value_DHT_H = h;
+
+	String s;
+
+	add_Value2Json(s, F("temperature"),String(last_value_DHT_T));
+	add_Value2Json(s, F("humidity"), String(last_value_DHT_H));
+	
+	send_serial_data(s);
 	read_dht = false;
 
-}
-
-/***************************************************************
- * Package  GPS Sensor Values for transmission
- * *************************************************************/
-String package_GPS_payload(){
-  String gps_data;
-  gps_data ="GPS#"+String(last_value_GPS_lat,6)+","+String(last_value_GPS_lon,6)+","+String(last_value_GPS_alt)+","+last_value_GPS_date+","+last_value_GPS_time+"*&";
-  return gps_data;
 }
 
 /*****************************************************************
  * read GPS sensor values                                        *
  *****************************************************************/
-
-void fetchSensorGPS()
-{
-     
- 	if (gps.location.isUpdated()) {
+void fetchSensorGPS(){
+	
+    if (gps.location.isUpdated()) {
 		if (gps.location.isValid()) {
 			last_value_GPS_lat = gps.location.lat();
 			last_value_GPS_lon = gps.location.lng();
@@ -398,27 +418,35 @@ void fetchSensorGPS()
 			Serial.println(F("Altitude INVALID"));
 		}
   	}
-		if (gps.date.isValid()) {
-			char gps_date[16];
-			snprintf_P(gps_date, sizeof(gps_date), PSTR("%02d/%02d/%04d"),
-					gps.date.month(), gps.date.day(), gps.date.year());
-			last_value_GPS_date = gps_date;
-		} else {
-			Serial.println(F("Date INVALID"));
-		}
-		if (gps.time.isValid()) {
-			char gps_time[20];
-			snprintf_P(gps_time, sizeof(gps_time), PSTR("%02d:%02d:%02d.%02d"),
-				gps.time.hour(), gps.time.minute(), gps.time.second(), gps.time.centisecond());
-			last_value_GPS_time = gps_time;
-		} else {
-			Serial.println(F("Time: INVALID"));
-		}
 
+	if (gps.date.isValid()) {
+		char gps_date[16];
+		snprintf_P(gps_date, sizeof(gps_date), PSTR("%02d/%02d/%04d"),
+				gps.date.month(), gps.date.day(), gps.date.year());
+		last_value_GPS_date = gps_date;
+	} else {
+		Serial.println(F("Date INVALID"));
+	}
 
-		String gps_values = package_GPS_payload();
-		send_serial_data(gps_values);
-		read_gps = false;
+	if (gps.time.isValid()) {
+		char gps_time[20];
+		snprintf_P(gps_time, sizeof(gps_time), PSTR("%02d:%02d:%02d.%02d"),
+			gps.time.hour(), gps.time.minute(), gps.time.second(), gps.time.centisecond());
+		last_value_GPS_time = gps_time;
+	} else {
+		Serial.println(F("Time: INVALID"));
+	}
+
+	String s;
+
+	add_Value2Json(s, F("GPS_lat"), String(last_value_GPS_lat, 6));
+	add_Value2Json(s, F("GPS_lon"), String(last_value_GPS_lon, 6));
+	add_Value2Json(s, F("GPS_height"), F("Altitude: "), last_value_GPS_alt);
+	add_Value2Json(s, F("GPS_date"), last_value_GPS_date);
+	add_Value2Json(s, F("GPS_time"), last_value_GPS_time);
+	
+	send_serial_data(s);
+	read_gps = false;
 	                                            
 }
 
@@ -442,15 +470,11 @@ void setup() {
 	Serial.print(F("Testing TinyGPS++ library v. "));
   	Serial.println(TinyGPSPlus::libraryVersion());
 
-	starttime = millis();
+ 
 
 }
 
 void loop() {
-
-
-	act_milli = millis();
-	send_now = msSince(starttime) > cfg::sending_intervall_ms;
 
 
 	NodeMCU.listen();
@@ -467,10 +491,16 @@ void loop() {
 					read_dht = true;
 			}
 			if(received_command.indexOf("fetchSensorPMS") >= 0){
-				send_PMS_payload();
+					read_pms = true;
+					pms_isOn = true;
 			}
-		}
-
+			if(received_command.indexOf("startPMS") >= 0){
+					pms_isOn = true;
+			}
+			if(received_command.indexOf("stopPMS") >= 0){
+					pms_isOn = false;
+			}
+	}
 
 
 	if(read_gps){
@@ -488,16 +518,12 @@ void loop() {
 	}
 
 	if(read_dht){
-		fetchSensorDHT(dht_temperature,dht_humidity);
+		fetchSensorDHT();
 	}
 
-	fetchSensorPMS();
-
-	if(send_now){
-		Serial.println("Time to sample");
-		starttime = millis();
+	if(read_pms){
+		fetchSensorPMS();
 	}
 
-  
-
+	 
 }
