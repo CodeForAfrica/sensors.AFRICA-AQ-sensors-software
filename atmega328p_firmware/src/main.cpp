@@ -121,11 +121,21 @@ template<typename T, size_t N> constexpr size_t array_num_elements(const T(&)[N]
 
 #define msSince(timestamp_before) (act_milli - (timestamp_before))
 
+/******************************************************************
+ * Constants                                                      *
+ ******************************************************************/
+constexpr unsigned SMALL_STR = 64-1;
+constexpr unsigned MED_STR = 256-1;
+constexpr unsigned LARGE_STR = 512-1;
+constexpr unsigned XLARGE_STR = 1024-1;
+
+#define RESERVE_STRING(name, size) String name((const char*)nullptr); name.reserve(size)
+
 /*****************************************************************
  * add value to json string                                  *
  *****************************************************************/
 static void add_Value2Json(String& res, const __FlashStringHelper* type, const String& value) {
-	String s;
+	RESERVE_STRING(s, SMALL_STR);
 
 	s = F("{\"value_type\":\"{t}\",\"value\":\"{v}\"},");
 	s.replace("{t}", String(type));
@@ -470,13 +480,12 @@ void setup() {
 	Serial.print(F("Testing TinyGPS++ library v. "));
   	Serial.println(TinyGPSPlus::libraryVersion());
 
- 
+	is_PMS_running = PMS_cmd(PmSensorCmd::Stop);
 
-}
+ }
 
 void loop() {
-
-
+	
 	NodeMCU.listen();
 	delay(50);
 
@@ -493,12 +502,6 @@ void loop() {
 			if(received_command.indexOf("fetchSensorPMS") >= 0){
 					read_pms = true;
 					pms_isOn = true;
-			}
-			if(received_command.indexOf("startPMS") >= 0){
-					pms_isOn = true;
-			}
-			if(received_command.indexOf("stopPMS") >= 0){
-					pms_isOn = false;
 			}
 	}
 
