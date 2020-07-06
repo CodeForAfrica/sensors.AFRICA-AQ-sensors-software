@@ -213,11 +213,10 @@ void fetchSensorPMS() {
 			is_PMS_running = PMS_cmd(PmSensorCmd::Start);
 		}
 		
-		
 		serialSDS.listen();
        delay(50);
 	   sampletime_PMS = millis();
-	   while((millis() - sampletime_PMS) < (READINGTIME_SDS_MS+WARMUPTIME_SDS_MS)){
+		while((millis() - sampletime_PMS) < (READINGTIME_SDS_MS+WARMUPTIME_SDS_MS)){
 			while (serialSDS.available() > 0) {
 				buffer = serialSDS.read();
 				
@@ -277,7 +276,6 @@ void fetchSensorPMS() {
 				if ((len > 2) && (len < (frame_len - 2))) { checksum_is += value; }
 				len++;
 				if (len == frame_len) {
-					
 					if (checksum_should == (checksum_is + 143)) {
 						checksum_ok = true;
 					} else {
@@ -308,6 +306,7 @@ void fetchSensorPMS() {
 							}
 						
 							pms_val_count++;
+							
 						}
 						len = 0;
 						checksum_ok = false;
