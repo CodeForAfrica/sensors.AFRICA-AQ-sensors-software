@@ -3739,6 +3739,8 @@ void fetchSensorSPH0645(String& s){
 		  }
 	 else{
 		 debug_outln_error(F("No Mic Value available"));
+		 Reinit_SPH0645(); //Give SPI pins control back to MIC
+		 delay(500);
 	 }
     }
     rx_buf_flag = false;
@@ -4619,17 +4621,16 @@ static unsigned long sendDataToOptionalApis(const String &data) {
 		send_csv(data);
 	}
 
-	if (cfg::send2sd)
-	{
+	return sum_send_time;
+}
+
+void openLoggingFile(){
+	if (cfg::send2sd){
 		init_SD();
 		debug_outln_info(F("## Logging to SD: "));
 		sensor_readings = SD.open(esp_chipid + "_" + "sensor_readings.txt", FILE_WRITE); // Open sensor_readings.txt file
-		Reinit_SPH0645(); //Give SPI bus pins back to the MIC
-		delay(5000);
-
-	}
-
-	return sum_send_time;
+		delay(2000);
+		}
 }
 
 /*****************************************************************
@@ -4879,6 +4880,8 @@ void loop(void) {
 		data = FPSTR(data_first_part);
 		RESERVE_STRING(result, MED_STR);
 
+		openLoggingFile();  // Open sensor_readings.txt file
+
 		if(cfg::sph0645_read){
 			data += result_SPH0645;
       		sum_send_time += sendCFA(result_SPH0645, SPH0645_API_PIN, FPSTR(SENSORS_SPH0645), "SPH0645_");
@@ -5027,8 +5030,9 @@ void loop(void) {
 
 		yield();
 
-		sum_send_time += sendDataToOptionalApis(data);
-
+		if(WIFI_enabled){
+			sum_send_time += sendDataToOptionalApis(data);
+		}
 		// https://en.wikipedia.org/wiki/Moving_average#Cumulative_moving_average
 		sending_time = (3 * sending_time + sum_send_time) / 4;
 		if (sum_send_time > 0) {
