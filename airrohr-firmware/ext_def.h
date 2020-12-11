@@ -132,11 +132,6 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 #define PPD_PIN_PM1 GPS_SERIAL_TX
 #define PPD_PIN_PM2 GPS_SERIAL_RX
 
-// GSM
-#define FONA_RX D5
-#define FONA_TX D6
-#define FONA_RST D8
-
 // define pins for status LEDs
 #define PMS_LED D3
 #define DHT_LED D4
@@ -260,13 +255,6 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 // GPS, preferred Neo-6M
 #define GPS_READ 0
 #define GPS_API_PIN 9
-
-// GSM
-#define GSM_CAPABLE 1
-#define GPRS_APN ""
-#define GPRS_USERNAME ""
-#define GPRS_PASSWORD ""
-#define GSM_PIN ""
 
 // MHZ19 CO2 sensor
 #define MHZ19_READ 0

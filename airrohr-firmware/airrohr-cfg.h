@@ -46,7 +46,6 @@ enum ConfigShapeId {
 	Config_dnms_read,
 	Config_dnms_correction,
 	Config_gps_read,
-	Config_gsm_capable,
 	Config_send2cfa,
 	Config_ssl_cfa,
 	Config_send2dusti,
@@ -87,10 +86,6 @@ enum ConfigShapeId {
 	Config_pwd_influx,
 	Config_measurement_name_influx,
 	Config_ssl_influx,
-	Config_gsm_pin,
-	Config_gprs_apn,
-	Config_gprs_username,
-	Config_gprs_password,
 };
 const char CFG_KEY_CURRENT_LANG[] PROGMEM = "current_lang";
 const char CFG_KEY_WLANSSID[] PROGMEM = "wlanssid";
@@ -114,7 +109,6 @@ const char CFG_KEY_DS18B20_READ[] PROGMEM = "ds18b20_read";
 const char CFG_KEY_DNMS_READ[] PROGMEM = "dnms_read";
 const char CFG_KEY_DNMS_CORRECTION[] PROGMEM = "dnms_correction";
 const char CFG_KEY_GPS_READ[] PROGMEM = "gps_read";
-const char CFG_KEY_GSM_CAPABLE[] PROGMEM = "gsm_capable";
 const char CFG_KEY_SEND2CFA[] PROGMEM = "send2cfa";
 const char CFG_KEY_SSL_CFA[] PROGMEM = "ssl_cfa";
 const char CFG_KEY_SEND2DUSTI[] PROGMEM = "send2dusti";
@@ -155,10 +149,6 @@ const char CFG_KEY_USER_INFLUX[] PROGMEM = "user_influx";
 const char CFG_KEY_PWD_INFLUX[] PROGMEM = "pwd_influx";
 const char CFG_KEY_MEASUREMENT_NAME_INFLUX[] PROGMEM = "measurement_name_influx";
 const char CFG_KEY_SSL_INFLUX[] PROGMEM = "ssl_influx";
-const char CFG_KEY_GSM_PIN[] PROGMEM = "gsm_pin";
-const char CFG_KEY_GPRS_APN[] PROGMEM = "gprs_apn";
-const char CFG_KEY_GPRS_USERNAME[] PROGMEM = "gprs_username";
-const char CFG_KEY_GPRS_PASSWORD[] PROGMEM = "gprs_password";
 static constexpr ConfigShapeEntry configShape[] PROGMEM = {
 	{ Config_Type_String, sizeof(cfg::current_lang)-1, FPSTR(CFG_KEY_CURRENT_LANG), cfg::current_lang },
 	{ Config_Type_String, sizeof(cfg::wlanssid)-1, FPSTR(CFG_KEY_WLANSSID), cfg::wlanssid },
@@ -182,7 +172,6 @@ static constexpr ConfigShapeEntry configShape[] PROGMEM = {
 	{ Config_Type_Bool, 0, FPSTR(CFG_KEY_DNMS_READ), &cfg::dnms_read },
 	{ Config_Type_String, sizeof(cfg::dnms_correction)-1, FPSTR(CFG_KEY_DNMS_CORRECTION), cfg::dnms_correction },
 	{ Config_Type_Bool, 0, FPSTR(CFG_KEY_GPS_READ), &cfg::gps_read },
-	{ Config_Type_Bool, 0, FPSTR(CFG_KEY_GSM_CAPABLE), &cfg::gsm_capable },
 	{ Config_Type_Bool, 0, FPSTR(CFG_KEY_SEND2CFA), &cfg::send2cfa },
 	{ Config_Type_Bool, 0, FPSTR(CFG_KEY_SSL_CFA), &cfg::ssl_cfa },
 	{ Config_Type_Bool, 0, FPSTR(CFG_KEY_SEND2DUSTI), &cfg::send2dusti },
@@ -223,8 +212,4 @@ static constexpr ConfigShapeEntry configShape[] PROGMEM = {
 	{ Config_Type_Password, sizeof(cfg::pwd_influx)-1, FPSTR(CFG_KEY_PWD_INFLUX), cfg::pwd_influx },
 	{ Config_Type_String, sizeof(cfg::measurement_name_influx)-1, FPSTR(CFG_KEY_MEASUREMENT_NAME_INFLUX), cfg::measurement_name_influx },
 	{ Config_Type_Bool, 0, FPSTR(CFG_KEY_SSL_INFLUX), &cfg::ssl_influx },
-	{ Config_Type_UInt, 0, FPSTR(CFG_KEY_GSM_PIN), &cfg::gsm_pin },
-	{ Config_Type_String, sizeof(cfg::gprs_apn)-1, FPSTR(CFG_KEY_GPRS_APN), cfg::gprs_apn },
-	{ Config_Type_String, sizeof(cfg::gprs_username)-1, FPSTR(CFG_KEY_GPRS_USERNAME), cfg::gprs_username },
-	{ Config_Type_Password, sizeof(cfg::gprs_password)-1, FPSTR(CFG_KEY_GPRS_PASSWORD), cfg::gprs_password },
 };

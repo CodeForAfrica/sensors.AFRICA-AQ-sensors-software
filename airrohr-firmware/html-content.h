@@ -34,7 +34,6 @@ const char SENSORS_SHT3X[] PROGMEM = "SHT3x";
 const char SENSORS_BMP180[] PROGMEM = "BMP180";
 const char SENSORS_BMX280[] PROGMEM = "BMP/E280";
 const char SENSORS_DNMS[] PROGMEM = "DNMS";
-const char SENSORS_RTC[] PROGMEM = "RTC";
 
 const char WEB_PAGE_HEADER[] PROGMEM = "<!DOCTYPE html><html>\
 <head>\
@@ -134,4 +133,3 @@ const char WEB_NC4k0[] PROGMEM = "NC4.0";
 const char WEB_NC10[] PROGMEM = "NC10";
 const char WEB_TPS[] PROGMEM = "TPS";
 const char WEB_GPS[] PROGMEM = "GPS";
-const char WEB_RTC[] PROGMEM = "RTC";

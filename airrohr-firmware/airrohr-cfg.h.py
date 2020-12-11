@@ -23,7 +23,6 @@ Bool		ds18b20_read
 Bool		dnms_read
 String		dnms_correction
 Bool		gps_read
-Bool        gsm_capable
 Bool		send2cfa
 Bool		ssl_cfa
 Bool		send2dusti
@@ -64,10 +63,6 @@ String		user_influx
 Password		pwd_influx
 String		measurement_name_influx
 Bool		ssl_influx
-UInt        gsm_pin
-String      gprs_apn
-String      gprs_username
-Password        gprs_password
 """
 
 with open("airrohr-cfg.h", "w") as h:

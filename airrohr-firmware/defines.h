@@ -32,11 +32,6 @@
 #define LEN_URL_CUSTOM 100
 #define LEN_USER_CUSTOM 65
 
-#define LEN_GSM_PIN 5
-#define LEN_GPRS_APN 100
-#define LEN_GPRS_USERNAME 100
-#define LEN_GPRS_PASSWORD 100
-
 #define MAX_PORT_DIGITS 5
 
 // define debug levels
