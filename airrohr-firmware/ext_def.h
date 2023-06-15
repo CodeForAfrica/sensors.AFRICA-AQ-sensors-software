@@ -60,6 +60,10 @@ static const char HOST_CFA[] PROGMEM = "api.sensors.africa";
 static const char URL_CFA[] PROGMEM = "/v1/push-sensor-data/";
 #define PORT_CFA 80
 
+static const char HOST_GID[] PROGMEM = "34.250.224.212:8000";
+static const char URL_GID[] PROGMEM = "/v1/push-sensor-data/";
+#define PORT_CFA 80
+
 static const char HOST_MADAVI[] PROGMEM = "api-rrd.madavi.de";
 static const char URL_MADAVI[] PROGMEM = "/data.php";
 #define PORT_MADAVI 80
@@ -203,6 +207,11 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 #define PPD_PIN_PM1 GPS_SERIAL_TX
 #define PPD_PIN_PM2 GPS_SERIAL_RX
 #endif
+
+//#define LIPO_API_PIN 31
+#define lIPO_READ 0
+#define Bat_Type lipo
+#define LIPO_API_PIN 31
 
 // DHT22, temperature, humidity
 #define DHT_READ 1

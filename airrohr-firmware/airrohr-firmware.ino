@@ -159,6 +159,21 @@ String SOFTWARE_VERSION(SOFTWARE_VERSION_STR);
 #include "ca-root.h"
 
 /******************************************************************
+ * Battery variables                                                      *
+ ******************************************************************/
+int blevel = 0;
+int bcharging = 0;
+long bvoltage = 0.000;
+float mainBVoltage = 0;
+float mainBLevel = 0;
+float mainBCState = 0;
+float bvolts = 0.00;
+
+uint16_t gBLevel;
+uint16_t gBVoltage;
+uint16_t gBCharging;
+
+/******************************************************************
  * Constants                                                      *
  ******************************************************************/
 constexpr unsigned SMALL_STR = 64-1;
@@ -215,6 +230,7 @@ namespace cfg {
 	bool sds_read = SDS_READ;
 	bool pms_read = PMS_READ;
 	bool hpm_read = HPM_READ;
+	bool lipo_read = lIPO_READ;
 	bool sps30_read = SPS30_READ;
 	bool bmp_read = BMP_READ;
 	bool bmx280_read = BMX280_READ;
@@ -3151,6 +3167,87 @@ static void fetchSensorSDS(String& s) {
 	debug_outln_verbose(FPSTR(DBG_TXT_END_READING), FPSTR(SENSORS_SDS011));
 }
 
+
+
+/*****************************************************************
+ * read Liptery level values                       *
+ *****************************************************************/
+static void fetchBatteryReadings(String& s) {
+
+//reading main battery voltage
+//Declarations
+	const int breadPin = 100; //pin number 100 is invalid, chosen for current use during testing
+	pinMode(breadPin, INPUT);
+	const float mainFullThresh = 4.2; //Depends on the battery float voltage (for the selected battery type)
+
+	mainBVoltage = analogRead(breadPin); //Readings obtained as analog values
+	mainBVoltage = mainBVoltage/1023; //the division constant depend on the board used, currently set to 1023
+
+	//Serial.println(F("Main Battery Voltage: "));
+	Serial.println(F("No connection to main battery read Pin: "));
+
+	Serial.println(F("---------------------------battery readings -------------------------------------------"));
+
+	//Battery values for the gsm battery
+	//Values ontained sung sim com§
+
+	if (! fona.getADCVoltage(&gBCharging)) {
+		Serial.println(F("Failed to read ADC Batery Voltage"));
+	} else {
+		Serial.print(F("ADC Battery Voltage = ")); Serial.print(gBCharging); Serial.println(F(" mV"));
+		//bcharging = gBCharging;
+		//bcharging = 1;
+	}
+
+	if (! fona.getBattPercent(&gBLevel)) {
+		Serial.println(F("Failed to read Battery Percentage"));
+	} else {
+		Serial.print(F("Battery percentage = ")); Serial.print(gBLevel); Serial.println(F(" %"));
+		//blevel = gBLevel;
+	}
+
+	if (! fona.getBattVoltage(&gBVoltage )) {
+		Serial.println(F("Failed to read Battery Voltage"));
+	} else {
+		//bvoltage = gBVoltage/1000;
+		Serial.print(F("Battery Voltage = ")); Serial.print(gBVoltage); Serial.println(F(" mv"));
+		//gBVoltage = gBVoltage/1000.00;
+		bvolts = gBVoltage/1000.00;
+		Serial.print(F("Battery Voltage = ")); Serial.print(bvolts); Serial.println(F(" v"));
+	}
+
+	Serial.println(F("---------------------------battery readings end-------------------------------------------"));
+
+String bchargingStr = "";
+		if(blevel == 100 || gBVoltage >=4.2){
+			 bchargingStr = "Fully charged";
+			 bcharging = 0;
+			 
+		}
+		else if (blevel > 50){
+			bchargingStr = "Charging";
+			bcharging = 1;
+		}
+		else{
+			bchargingStr = "Not Charging";
+			bcharging = 2;
+		}
+
+	if (send_now) {
+		//PMS_P0
+		add_Value2Json(s, F("batt_Level"), F("blevel:   "), gBLevel);
+		add_Value2Json(s, F("batt_Voltage"), F("bvoltage:  "), bvolts);
+		add_Value2Json(s, F("batt_Charging"), F("gBCharging: "), bcharging);
+
+		// add_Value2Json(s, F("P10"), F("gBLevel:   "), gBLevel);
+		// add_Value2Json(s, F("P1"), F("gBVoltage:  "), bvolts);
+		// add_Value2Json(s, F("P2"), F("gBCharging: "), bcharging);
+
+	}
+
+}
+
+
 /*****************************************************************
  * read Plantronic PM sensor sensor values                       *
  *****************************************************************/
@@ -4624,7 +4721,7 @@ void setup(void) {
  * And action                                                    *
  *****************************************************************/
 void loop(void) {
-	String result_PPD, result_SDS, result_PMS, result_HPM;
+	String result_PPD, result_SDS, result_PMS, result_HPM, result_LIPO;
 	String result_GPS, result_DNMS;
 
 	unsigned sum_send_time = 0;
@@ -4746,6 +4843,13 @@ void loop(void) {
 		data = FPSTR(data_first_part);
 		RESERVE_STRING(result, MED_STR);
 
+		if (cfg::lipo_read) {
+			fetchBatteryReadings(result_LIPO);
+			data += result_LIPO;
+			sum_send_time += sendCFA(result_LIPO, LIPO_API_PIN, FPSTR(SENSORS_LIPO37V), "LIPO_");
+			sum_send_time += sendSensorCommunity(result_LIPO, PPD_API_PIN, FPSTR(SENSORS_PPD42NS), "LIPO_");		
+		}
+		
 		if (cfg::ppd_read) {
 			data += result_PPD;
 			sum_send_time += sendCFA(result_PPD, PPD_API_PIN, FPSTR(SENSORS_PPD42NS), "PPD_");
