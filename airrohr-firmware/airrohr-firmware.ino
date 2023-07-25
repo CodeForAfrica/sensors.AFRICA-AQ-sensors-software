@@ -190,7 +190,7 @@ namespace cfg {
 	unsigned debug = DEBUG;
 
 	unsigned time_for_wifi_config = 600000;
-	unsigned sending_intervall_ms = 30000;
+	unsigned sending_intervall_ms = 145000;
 
 	char current_lang[3];
 
