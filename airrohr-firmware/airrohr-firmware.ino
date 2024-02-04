@@ -698,15 +698,6 @@ static void display_debug(const String &text1, const String &text2)
 }
 
 /*****************************************************************
-/* flushSerial                                                   *
-/*****************************************************************/
-void flushSerial()
-{
-	while (fonaSS.available())
-		fonaSS.read();
-}
-
-/*****************************************************************
  * check display values, return '-' if undefined                 *
  *****************************************************************/
 static String check_display_value(double value, double undef, uint8_t len, uint8_t str_len)
@@ -2823,7 +2814,15 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 	request_head += String(data.length(), DEC) + "\r\n";
 	request_head += F("Connection: close\r\n\r\n");
 
-	if (gsm_capable)
+	if (!GPRS_CONNECTED)
+	{
+		if (SIM_USABLE)
+		{
+			GPRS_init();
+		}
+	}
+
+	if (GPRS_CONNECTED)
 	{
 		delay(3000);
 		int retry_count = 0;
@@ -2859,12 +2858,6 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 		debug_out(gprs_url, DEBUG_MIN_INFO);
 		debug_out(gprs_data, DEBUG_MIN_INFO);
 
-		if (fona.GPRSstate() != GPRS_CONNECTED)
-		{
-			debug_out(F("************* Reconnect GPRS *************"), DEBUG_MIN_INFO);
-			enableGPRS();
-		}
-
 		flushSerial();
 		debug_out(F("## Sending via gsm\n\n"), DEBUG_MIN_INFO);
 
@@ -2872,8 +2865,7 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 		{
 			debug_outln_error(F("Failed with status code "));
 			debug_out(String(statuscode), DEBUG_ERROR);
-			restart_GSM();
-			return true;
+			return 0;
 		}
 		while (length > 0)
 		{

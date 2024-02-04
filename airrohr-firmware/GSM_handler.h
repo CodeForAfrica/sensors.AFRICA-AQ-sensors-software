@@ -261,15 +261,21 @@ void GSM_soft_reset()
  ***/
 void restart_GSM()
 {
+    //! The AQ PCB board has the GSM reset physically connected to the ESP chip
+    // GSM_soft_reset();
+    if (!fona.begin(*fonaSerial))
+    {
+        Serial.println("Couldn't find GSM");
+        return;
+    }
 
-    flushSerial();
-
-    // ToDO: Check if RST pin is physically connected to the board to determine eith a hard or soft reset
-
-    // ! First version of noise PCB has no physical connection to the SIM900 external reset pin
-    // ! Pin 4 of the ESP-12E is thus floating and is only declared to instantiate a FONA class
-    // ** For this reason, a soft rest is more approriate. Fona::begin will literally write to an non-existent pin
-    GSM_soft_reset();
+    if (!GSM_init(fonaSerial))
+    {
+        Serial.println("GSM not fully configured");
+        Serial.print("Failure point: ");
+        Serial.println(GSM_INIT_ERROR);
+        Serial.println();
+    }
 }
 
 void enableGPRS()
