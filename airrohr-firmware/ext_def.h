@@ -1,3 +1,6 @@
+#ifndef EXT_DEF_H
+#define EXT_DEF_H
+
 // Language config
 #define CURRENT_LANG INTL_LANG
 
@@ -33,7 +36,8 @@ const char WWW_PASSWORD[] PROGMEM = "feinstaub";
 // OpenSenseMap
 #define SENSEBOXID ""
 
-enum LoggerEntry {
+enum LoggerEntry
+{
     LoggerCFA,
     LoggerSensorCommunity,
     LoggerMadavi,
@@ -45,13 +49,14 @@ enum LoggerEntry {
     LoggerCount
 };
 
-struct LoggerConfig {
+struct LoggerConfig
+{
     uint16_t destport;
     uint16_t _unused;
 #if defined(ESP8266)
-    BearSSL::Session* session;
+    BearSSL::Session *session;
 #else
-    void* session;
+    void *session;
 #endif
 };
 
@@ -142,7 +147,6 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 #define DHT_LED D4
 #endif
 
-
 // pin assignments for Arduino SAMD Zero board
 #if defined(ARDUINO_SAMD_ZERO)
 #define ONEWIRE_PIN D7
@@ -173,9 +177,9 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 #endif
 #define PPD_PIN_PM1 GPS_SERIAL_TX
 #define PPD_PIN_PM2 GPS_SERIAL_RX
-//#define RFM69_CS D0
-//#define RFM69_RST D2
-//#define RFM69_INT D4
+// #define RFM69_CS D0
+// #define RFM69_RST D2
+// #define RFM69_INT D4
 #endif
 
 // pin assignments for heltec_wifi_lora_32_V2 board
@@ -232,8 +236,8 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 // Sensirion SPS30, the more expensive version of the particle sensor
 #define SPS30_READ 0
 #define SPS30_API_PIN 1
-#define SPS30_WAITING_AFTER_LAST_READ 11000   // waiting time after last reading mesurement data in ms
-#define SPS30_AUTO_CLEANING_INTERVAL 7200 // time in seconds
+#define SPS30_WAITING_AFTER_LAST_READ 11000 // waiting time after last reading mesurement data in ms
+#define SPS30_AUTO_CLEANING_INTERVAL 7200   // time in seconds
 
 // BMP180, temperature, pressure
 #define BMP_READ 0
@@ -306,3 +310,5 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 
 // Set debug level for serial output?
 #define DEBUG 3
+
+#endif
