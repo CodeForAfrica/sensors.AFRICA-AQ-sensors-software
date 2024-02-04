@@ -4908,8 +4908,8 @@ static void setupNetworkTime()
 		if (!sntp_time_set) {
 			time_t now = time(nullptr);
 			debug_outln_info(F("SNTP synced: "), ctime(&now));
-			twoStageOTAUpdate();
-			last_update_attempt = millis();
+			// twoStageOTAUpdate();
+			// last_update_attempt = millis();
 		}
 		sntp_time_set++; });
 #endif
