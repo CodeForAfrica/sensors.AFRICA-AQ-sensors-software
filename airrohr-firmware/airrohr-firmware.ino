@@ -5037,8 +5037,6 @@ void setup(void)
 	init_config();
 	init_display();
 	init_lcd();
-	setupNetworkTime();
-	connectWifi();
 	setup_webserver();
 	createLoggerConfigs();
 	debug_outln_info(F("\nChipId: "), esp_chipid);
@@ -5071,6 +5069,8 @@ void setup(void)
 		debug_outln_info(F("Read GPS..."));
 		disable_unneeded_nmea();
 	}
+
+	setupNetworkTime();
 
 	powerOnTestSensors();
 	logEnabledAPIs();
