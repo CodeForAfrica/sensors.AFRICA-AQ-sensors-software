@@ -98,7 +98,15 @@ bool GSM_init(SoftwareSerial *gsm_serial)
     Serial.println("Attempting to enable GPRS");
     delay(2000);
 
-    if (!fona.enableGPRS(true)) // ToDO: Have multiple attempts
+    if (fona.GPRSstate() != 1)
+    {
+        error_msg = "Failed to attach GPRS service";
+        GSM_INIT_ERROR = error_msg;
+        Serial.println(error_msg);
+        return false;
+    }
+
+    if (!GPRS_init())
     {
         error_msg = "Failed to enable GPRS";
         GSM_INIT_ERROR = error_msg;
