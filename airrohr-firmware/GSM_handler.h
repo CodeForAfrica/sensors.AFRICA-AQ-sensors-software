@@ -98,21 +98,8 @@ bool GSM_init(SoftwareSerial *gsm_serial)
     Serial.println("Attempting to enable GPRS");
     delay(2000);
 
-    if (fona.GPRSstate() != 1)
-    {
-        error_msg = "Failed to attach GPRS service";
-        GSM_INIT_ERROR = error_msg;
-        Serial.println(error_msg);
-        return false;
-    }
-
     if (!GPRS_init())
-    {
-        error_msg = "Failed to enable GPRS";
-        GSM_INIT_ERROR = error_msg;
-        Serial.println(error_msg);
         return false;
-    }
 
     Serial.print("GPRS enabled!");
 
@@ -228,12 +215,25 @@ bool is_SIMCID_valid()
 // Similar to FONA enableGPRS() but quicker because APN setting are not configured as it is configured during GSM_init()
 bool GPRS_init()
 {
+    String err = "";
     // handle_AT_CMD("AT+SAPBR=0,1"); // Disable GPRS
-    handle_AT_CMD("AT+CGATT=1");                // Attach GPRS service
+    // Attach GPRS service
+    /* handle_AT_CMD("AT+CGATT=1"); */
+    if (fona.GPRSstate() != 1)
+    {
+        err = "Failed to attach GPRS service";
+        GSM_INIT_ERROR = err;
+        Serial.println(err);
+        GPRS_CONNECTED = false;
+        return false;
+    }
+
     String res = handle_AT_CMD("AT+SAPBR=1,1"); // Enable GPRS
     if (res.indexOf("OK") == -1)
     {
-        Serial.println("Failed to enable GPRS");
+        err = "Failed to enable GPRS";
+        GSM_INIT_ERROR = err;
+        Serial.println(err);
         GPRS_CONNECTED = false;
         return GPRS_CONNECTED;
     }
