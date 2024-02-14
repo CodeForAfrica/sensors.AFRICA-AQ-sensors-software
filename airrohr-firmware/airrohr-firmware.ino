@@ -2814,17 +2814,19 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 	request_head += String(data.length(), DEC) + "\r\n";
 	request_head += F("Connection: close\r\n\r\n");
 
-	if (!GPRS_CONNECTED)
+	// if (fona.GPRSstate() != 1)
+	if (!GPRS_init())
 	{
+		// GPRS_CONNECTED = false;
 		if (SIM_USABLE)
 		{
-			GPRS_init();
+			// if (!GPRS_init())
+			GSM_soft_reset();
 		}
 	}
 
 	if (GPRS_CONNECTED)
 	{
-		delay(3000);
 		int retry_count = 0;
 		uint16_t statuscode;
 		int16_t length;
@@ -2864,7 +2866,8 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 		if (!fona.HTTP_POST_start((char *)gprs_url, F("application/json"), gprs_request_head, (uint8_t *)gprs_data, strlen(gprs_data), &statuscode, (uint16_t *)&length))
 		{
 			debug_outln_error(F("Failed with status code "));
-			debug_out(String(statuscode), DEBUG_ERROR);
+			debug_out(String(statuscode), DEBUG_ERROR); // !ERROR not handled correctly: POST in most cases is successul but the status code !=200
+			fona.enableGPRS(false);
 			return 0;
 		}
 		while (length > 0)
@@ -2887,6 +2890,7 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 		}
 		debug_out(F("\n\n## End sending via gsm \n\n"), DEBUG_MIN_INFO);
 		fona.HTTP_POST_end();
+		fona.enableGPRS(false);
 	}
 	else if (WiFi.status() == WL_CONNECTED)
 	{

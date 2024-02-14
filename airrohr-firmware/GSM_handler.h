@@ -101,7 +101,7 @@ bool GSM_init(SoftwareSerial *gsm_serial)
     if (!GPRS_init())
         return false;
 
-    Serial.print("GPRS enabled!");
+    Serial.println("GPRS enabled!");
 
     GPRS_CONNECTED = true;
     // ToDo: Attempt to do a ping test to determine whether we can communicate with the internet
@@ -216,16 +216,14 @@ bool is_SIMCID_valid()
 bool GPRS_init()
 {
     String err = "";
-    // handle_AT_CMD("AT+SAPBR=0,1"); // Disable GPRS
-    // Attach GPRS service
-    /* handle_AT_CMD("AT+CGATT=1"); */
-    if (fona.GPRSstate() != 1)
+
+    if (!fona.sendCheckReply(F("AT+CGATT=1"), F("OK"), 10000))
     {
         err = "Failed to attach GPRS service";
         GSM_INIT_ERROR = err;
         Serial.println(err);
         GPRS_CONNECTED = false;
-        return false;
+        return GPRS_CONNECTED;
     }
 
     String res = handle_AT_CMD("AT+SAPBR=1,1"); // Enable GPRS
@@ -249,7 +247,7 @@ void GSM_soft_reset()
     if (!fona.sendCheckReply(F("AT+CFUN=1"), F("OK")))
     {
         Serial.println("Soft resetting GSM with full functionality failed!");
-        return;
+        // return;
     }
 
     if (!GSM_init(fonaSerial))
@@ -269,6 +267,7 @@ void GSM_soft_reset()
  ***/
 void restart_GSM()
 {
+    Serial.println("Restarting GSM");
     //! The AQ PCB board has the GSM reset physically connected to the ESP chip
     // GSM_soft_reset();
     if (!fona.begin(*fonaSerial))
