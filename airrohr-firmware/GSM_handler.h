@@ -303,7 +303,7 @@ void enableGPRS()
 void disableGPRS()
 {
     fona.enableGPRS(false);
-    delay(3000);
+    GPRS_CONNECTED = false;
 }
 
 /*****************************************************************

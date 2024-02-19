@@ -2867,7 +2867,7 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 		{
 			debug_outln_error(F("Failed with status code "));
 			debug_out(String(statuscode), DEBUG_ERROR); // !ERROR not handled correctly: POST in most cases is successul but the status code !=200
-			fona.enableGPRS(false);
+			disableGPRS();
 			return 0;
 		}
 		while (length > 0)
@@ -2890,7 +2890,7 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 		}
 		debug_out(F("\n\n## End sending via gsm \n\n"), DEBUG_MIN_INFO);
 		fona.HTTP_POST_end();
-		fona.enableGPRS(false);
+		disableGPRS();
 	}
 	else if (WiFi.status() == WL_CONNECTED)
 	{
