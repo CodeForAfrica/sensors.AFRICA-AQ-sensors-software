@@ -2815,16 +2815,18 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 	request_head += F("Connection: close\r\n\r\n");
 
 	// if (fona.GPRSstate() != 1)
-	if (!GPRS_init())
+	if (!GPRS_CONNECTED)
 	{
-		// GPRS_CONNECTED = false;
-		if (SIM_USABLE)
+		if (!GPRS_init())
 		{
-			// if (!GPRS_init())
-			GSM_soft_reset();
+			// GPRS_CONNECTED = false;
+			if (SIM_USABLE)
+			{
+				// if (!GPRS_init())
+				GSM_soft_reset();
+			}
 		}
 	}
-
 	if (GPRS_CONNECTED)
 	{
 		int retry_count = 0;
