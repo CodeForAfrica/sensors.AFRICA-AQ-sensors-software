@@ -19,7 +19,7 @@ const char WWW_PASSWORD[] PROGMEM = "feinstaub";
 #define SSL_CFA 0
 #define SEND2SENSORCOMMUNITY 0
 #define SSL_SENSORCOMMUNITY 0
-#define SEND2MADAVI 1
+#define SEND2MADAVI 0
 #define SSL_MADAVI 0
 #define SEND2SENSEMAP 0
 #define SEND2FSAPP 0
@@ -258,7 +258,7 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 #define DNMS_CORRECTION "0.0"
 
 // GPS, preferred Neo-6M
-#define GPS_READ 0
+#define GPS_READ 1
 #define GPS_API_PIN 9
 
 // GSM

@@ -191,7 +191,7 @@ namespace cfg {
 	unsigned debug = DEBUG;
 
 	unsigned time_for_wifi_config = 60000;
-	unsigned sending_intervall_ms = 145000;
+	unsigned sending_intervall_ms = 30000;
 
 	char current_lang[3];
 
@@ -2513,9 +2513,9 @@ void connectGSM(){
   if (! fona.begin(*fonaSerial)) {
     debug_outln(F("Couldn't find FONA"), DEBUG_MIN_INFO);
     
-    debug_outln(F("Switching to Wifi"), DEBUG_MIN_INFO);
-    gsm_capable = 0;
-    connectWifi();
+    //debug_outln(F("Switching to Wifi"), DEBUG_MIN_INFO);
+    //gsm_capable = 0;
+    //connectWifi();
   } else {
     debug_outln(F("FONA is OK"), DEBUG_MIN_INFO);
 
@@ -2529,7 +2529,7 @@ void connectGSM(){
      debug_outln(F("Module IMEI: "), DEBUG_MIN_INFO); debug_out(String(imei),DEBUG_MIN_INFO);
     }
 
-	fona.setGPRSNetworkSettings(F("internet"), F(""), F(""));
+	//fona.setGPRSNetworkSettings(F("internet"), F(""), F(""));
 
     while((fona.getNetworkStatus() != GSM_CONNECTED) && (retry_count < 40)){
       Serial.println("Not registered on network");
@@ -4589,6 +4589,7 @@ void setup(void) {
 	{
 		connectWifi();
 	}
+
 	if (cfg::gps_read) {
 #if defined(ESP8266)
 		serialGPS = new SoftwareSerial;
