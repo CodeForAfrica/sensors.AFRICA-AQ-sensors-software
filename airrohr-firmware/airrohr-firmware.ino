@@ -115,6 +115,13 @@ String SOFTWARE_VERSION(SOFTWARE_VERSION_STR);
 #include <Adafruit_FONA.h>
 
 unsigned long lastPrintTime = 0;
+String myGprs_status = "GPRS Not Connected";
+String myGsm_status = "Not Connected to Network";
+String myGps_status = "GPS Not Connected";
+String myGps_coordinates = "Invalid";
+unsigned long actual_transmission_interval = 0;
+unsigned long last_actual_transmission_interval = 0;
+
 #if defined(INTL_BG)
 #include "intl_bg.h"
 #elif defined(INTL_CZ)
@@ -2548,6 +2555,7 @@ void connectGSM(){
     
 	while((fona.getNetworkStatus() != GSM_CONNECTED) && (retry_count < 5)){
       Serial.println("Not registered on network");
+	  myGsm_status = "Not Connected to Network";
       delay(5000);
       retry_count++;
       
@@ -2563,6 +2571,7 @@ void connectGSM(){
 
 	if (fona.getNetworkStatus() == GSM_CONNECTED)
 	{
+		myGsm_status = "Connected to Network";
 		Serial.println("Enabling GPRS----------");
 			enableGPRS();
 	}
@@ -2579,9 +2588,20 @@ void enableGPRS()
 	// fona.setGPRSNetworkSettings(FONAFlashStringPtr(gprs_apn), FONAFlashStringPtr(gprs_username), FONAFlashStringPtr(gprs_password));
 	int retry_count = 0;
 	while ((fona.GPRSstate() != GPRS_CONNECTED) && (retry_count < 5))
+	{	
+		myGprs_status = "GPRS Not Connected";
+		delay(3000);
+		retry_count++;
+	}
+
+	if(fona.GPRSstate() == GPRS_CONNECTED){
+		myGprs_status = "GPRS Connected";
+	}
+
+	while ((fona.enableGPRS(true) != true) && (retry_count < 5))
 	{
 		delay(3000);
-		fona.enableGPRS(true);
+		Serial.println("Connection to GPRS APN Settings Failed----------");
 		retry_count++;
 	}
 
@@ -2591,7 +2611,7 @@ void disableGPRS()
 {
 	fona.enableGPRS(false);
 	delay(3000);
-	fona.setGPRSNetworkSettings(FONAFlashStringPtr("internet"), FONAFlashStringPtr(""), FONAFlashStringPtr(""));
+	//fona.setGPRSNetworkSettings(FONAFlashStringPtr("internet"), FONAFlashStringPtr(""), FONAFlashStringPtr(""));
 }
 
 void restart_GSM()
@@ -2671,7 +2691,7 @@ static unsigned long sendData(const LoggerEntry logger, const String& data, cons
 	request_head += F("Connection: close\r\n\r\n");
 
 	if (gsm_capable){
-		delay(3000);
+		//delay(3000);
 		int retry_count = 0;
 		uint16_t statuscode;
 		int16_t length;
@@ -2679,8 +2699,8 @@ static unsigned long sendData(const LoggerEntry logger, const String& data, cons
 		String gprs_request_head = F("X-PIN: "); gprs_request_head += String(pin) + "\\r\\n";
 		gprs_request_head += F("X-Sensor: esp8266-"); gprs_request_head += esp_chipid;
 
-		debug_out(F("Start connecting via GPRS"), DEBUG_MIN_INFO);
-		debug_out(F("HOST "), DEBUG_MIN_INFO);
+		debug_out(F("\nStart connecting via GPRS"), DEBUG_MIN_INFO);
+		debug_out(F("\nHOST "), DEBUG_MIN_INFO);
 		debug_out(s_Host, DEBUG_MIN_INFO);
 		debug_out(F("URL "),DEBUG_MIN_INFO);
 		debug_out(s_url, DEBUG_MIN_INFO);
@@ -2696,26 +2716,24 @@ static unsigned long sendData(const LoggerEntry logger, const String& data, cons
 		const char* url_copy = post_url.c_str();
 		char gprs_url[strlen(url_copy)];
 		strcpy(gprs_url, url_copy);
-
-		Serial.println("POST URL  " + String(gprs_url));
 		
-
-		debug_out(F("Sending data via gsm"), DEBUG_MIN_INFO); 
-		debug_out(F("http://"), DEBUG_MIN_INFO);
+		debug_outln_info("\nPOST URL  " + String(gprs_url));
+		debug_out(F("\nSending data via gsm"), DEBUG_MIN_INFO); 
+		debug_out(F("\nhttp://"), DEBUG_MIN_INFO);
 		debug_out(gprs_url, DEBUG_MIN_INFO);
 		debug_out(gprs_data, DEBUG_MIN_INFO);
 			
 		
 		if(fona.GPRSstate() != GPRS_CONNECTED){
-		debug_out(F("************* Reconnect GPRS *************"), DEBUG_MIN_INFO); 
+		debug_out(F("\n************* Reconnect GPRS *************"), DEBUG_MIN_INFO); 
 		enableGPRS();
 		}
 
 		flushSerial();
-		debug_out(F("## Sending via gsm\n\n"), DEBUG_MIN_INFO);
+		debug_out(F("\n## Sending via gsm\n\n"), DEBUG_MIN_INFO);
 		
 		if (!fona.HTTP_POST_start((char *) gprs_url, F("application/json"), gprs_request_head, (uint8_t *) gprs_data, strlen(gprs_data), &statuscode, (uint16_t *)&length)) {
-		debug_outln_error(F("Failed with status code "));
+		debug_outln_error(F("\nFailed with status code "));
 		debug_out(String(statuscode), DEBUG_ERROR);
 		restart_GSM();
 		return true;
@@ -2755,30 +2773,30 @@ static unsigned long sendData(const LoggerEntry logger, const String& data, cons
 		}
 		if (http.begin(*client, s_Host, loggerConfigs[logger].destport, s_url, !!loggerConfigs[logger].session))
 		{
-			http.addHeader(F("Content-Type"), contentType);
-			http.addHeader(F("X-Sensor"), String(F(SENSOR_BASENAME)) + esp_chipid);
+			http.addHeader(F("\nContent-Type"), contentType);
+			http.addHeader(F("\nX-Sensor"), String(F(SENSOR_BASENAME)) + esp_chipid);
 			if (pin)
 			{
-				http.addHeader(F("X-PIN"), String(pin));
+				http.addHeader(F("\nX-PIN"), String(pin));
 			}
 
 			result = http.POST(data);
 
 			if (result >= HTTP_CODE_OK && result <= HTTP_CODE_ALREADY_REPORTED)
 			{
-				debug_outln_info(F("Succeeded - "), s_Host);
+				debug_outln_info(F("\nSucceeded - "), s_Host);
 				send_success = true;
 			}
 			else if (result >= HTTP_CODE_BAD_REQUEST)
 			{
-				debug_outln_info(F("Request failed with error: "), String(result));
-				debug_outln_info(F("Details:"), http.getString());
+				debug_outln_info(F("\nRequest failed with error: "), String(result));
+				debug_outln_info(F("\nDetails:"), http.getString());
 			}
 			http.end();
 		}
 	} else
 	{
-		debug_outln_info(F("Failed connecting to "), s_Host);
+		debug_outln_info(F("\nFailed connecting to "), s_Host);
 	}
 
 		wdt_reset();
@@ -3633,6 +3651,7 @@ static void fetchSensorDNMS(String& s) {
 	debug_outln_verbose(FPSTR(DBG_TXT_END_READING), FPSTR(SENSORS_DNMS));
 }
 
+
 /*****************************************************************
  * read GPS sensor values                                        *
  *****************************************************************/
@@ -3641,9 +3660,14 @@ static void fetchSensorGPS(String& s) {
 
 	if (gps.location.isUpdated()) {
 		if (gps.location.isValid()) {
+			myGps_status = "GPS is Connected";
+			myGps_coordinates = "Valid";
 			last_value_GPS_lat = gps.location.lat();
 			last_value_GPS_lon = gps.location.lng();
-		} else {
+		} 
+		else {
+			myGps_coordinates = "Invalid";
+			myGps_status = "GPS is Not Connected";
 			last_value_GPS_lat = -200;
 			last_value_GPS_lon = -200;
 			debug_outln_verbose(F("Lat/Lng INVALID"));
@@ -4636,12 +4660,22 @@ void loop(void) {
 	act_micro = micros();
 	act_milli = millis();
 	send_now = msSince(starttime) > cfg::sending_intervall_ms;
-	if(msSince(starttime) - lastPrintTime > 1000){
+	if(msSince(starttime) - lastPrintTime > 5000){
+	debug_outln_info("_____________________________________________________");
 	debug_outln_info("Send Now Status: " + String (send_now));
 	debug_outln_info("msSince(starttime): " + String (msSince(starttime)));
+	debug_outln_info("GSM Status: " + String (myGsm_status));
+	debug_outln_info("GPRS Status: " + String (myGprs_status));
+	debug_outln_info("GPS Status: " + String (myGps_status));
+	debug_outln_info("GPRS Coordinates: " + String (myGps_coordinates));
+	actual_transmission_interval = msSince(starttime) - last_actual_transmission_interval;
+	debug_outln_info("Actual Transmission Interval: " + String (actual_transmission_interval));
+	debug_outln_info("_____________________________________________________");
+	
 	// Wait at least 30s for each NTP server to sync
 	lastPrintTime = msSince(starttime);
 	}
+
 	if (!sntp_time_set && send_now &&
 			msSince(time_point_device_start_ms) < 1000 * 2 * 30 + 5000) {
 		debug_outln_info(F("NTP sync not finished yet, skipping send"));
@@ -4718,7 +4752,6 @@ void loop(void) {
 		}
 
 		if (cfg::pms_read) {
-			debug_outln_info(F("Reading Pms: ...."));
 			fetchSensorPMS(result_PMS);			
 		}
 
@@ -4757,6 +4790,18 @@ void loop(void) {
 		if(!gsm_capable){
 		last_signal_strength = WiFi.RSSI();
 		}
+		//check gsm connection status
+		debug_outln_info(F("Checking GPRS Status Before Transmission: ....."));
+		if (gsm_capable)
+		{
+			is_SDS_running = SDS_cmd(PmSensorCmd::Stop);
+			connectGSM();
+		}
+		else
+		{
+			connectWifi();
+		}
+
 		RESERVE_STRING(data, LARGE_STR);
 		data = FPSTR(data_first_part);
 		RESERVE_STRING(result, MED_STR);
@@ -4858,6 +4903,7 @@ void loop(void) {
 			sum_send_time += sendSensorCommunity(result_GPS, GPS_API_PIN, F("GPS"), "GPS_");
 			result = emptyString;
 		}
+		
 		add_Value2Json(data, F("samples"), String(sample_count));
 		add_Value2Json(data, F("min_micro"), String(min_micro));
 		add_Value2Json(data, F("max_micro"), String(max_micro));
@@ -4877,6 +4923,10 @@ void loop(void) {
 		if (sum_send_time > 0) {
 			debug_outln_info(F("Time for Sending (ms): "), String(sending_time));
 		}
+
+		//Data Transmission Is Over
+		last_actual_transmission_interval = act_milli;
+		disableGPRS();
 
 		// reconnect to WiFi if disconnected
 		/*if (WiFi.status() != WL_CONNECTED) {
