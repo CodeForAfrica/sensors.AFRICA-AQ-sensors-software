@@ -114,6 +114,7 @@ String SOFTWARE_VERSION(SOFTWARE_VERSION_STR);
 #include "./dnms_i2c.h"
 #include <Adafruit_FONA.h>
 
+unsigned long lastPrintTime = 0;
 #if defined(INTL_BG)
 #include "intl_bg.h"
 #elif defined(INTL_CZ)
@@ -1738,9 +1739,11 @@ static void webserver_config() {
 
 static void sensor_restart() {
 #if defined(ESP8266)
+		if(!gsm_capable){ //Only Disconnect Wifi only if device is using Wifi
 		WiFi.disconnect();
 		WiFi.mode(WIFI_OFF);
 		delay(100);
+		}
 #endif
 		SPIFFS.end();
 		serialSDS.end();
@@ -2416,6 +2419,7 @@ static void waitForWifiToConnect(int maxRetries) {
  * WiFi auto connecting script                                   *
  *****************************************************************/
 static void connectWifi() {
+	if(!gsm_capable){
 	display_debug(F("Connecting to"), String(cfg::wlanssid));
 #if defined(ESP8266)
 	// Enforce Rx/Tx calibration
@@ -2451,6 +2455,7 @@ static void connectWifi() {
 	}
 	debug_outln_info(F("WiFi connected, IP is: "), WiFi.localIP().toString());
 	last_signal_strength = WiFi.RSSI();
+	}
 
 	if (MDNS.begin(cfg::fs_ssid)) {
 		MDNS.addService("http", "tcp", 80);
@@ -2516,7 +2521,8 @@ void connectGSM(){
     //debug_outln(F("Switching to Wifi"), DEBUG_MIN_INFO);
     //gsm_capable = 0;
     //connectWifi();
-  } else {
+  } 
+  else {
     debug_outln(F("FONA is OK"), DEBUG_MIN_INFO);
 
     unlock_pin();
@@ -2531,42 +2537,40 @@ void connectGSM(){
 
 	//fona.setGPRSNetworkSettings(F("internet"), F(""), F(""));
 
-    while((fona.getNetworkStatus() != GSM_CONNECTED) && (retry_count < 40)){
+	if(getNetStatus().indexOf("+CREG: 0,0")){
+		debug_outln_info(F("Device Not COnnected to Network ----------"));
+	}
+	else{
+		debug_outln_info(F("Device  COnnected to Network --------------"));
+	}
+
+	debug_outln_info(String(fona.getNetworkStatus()));
+    
+	while((fona.getNetworkStatus() != GSM_CONNECTED) && (retry_count < 5)){
       Serial.println("Not registered on network");
       delay(5000);
       retry_count++;
       
-      if (retry_count > 30){
-        delay(5000);
-        restart_GSM();
-      }
+    //   if (retry_count > 30){
+    //     delay(5000);
+    //     restart_GSM();
+    //   }
       
       flushSerial();
     }
 
-	if (fona.getNetworkStatus() != GSM_CONNECTED)
-	{
-		String fss(cfg::fs_ssid);
-		display_debug(fss.substring(0, 16), fss.substring(16));
+	Serial.println("Sim Registered to Network network");
 
-		wifiConfig();
-		if (fona.getNetworkStatus() != GSM_CONNECTED)
-		{
-			retry_count = 0;
-			while ((fona.getNetworkStatus() != GSM_CONNECTED) && (retry_count < 20))
-			{
-				delay(500);
-				debug_outln(".", DEBUG_MIN_INFO);
-				retry_count++;
-			}
-			debug_outln("", DEBUG_MIN_INFO);
-		}
-	}
-	else
+	if (fona.getNetworkStatus() == GSM_CONNECTED)
 	{
-		enableGPRS();
-		Serial.println("GPRS ENABLED");
+		Serial.println("Enabling GPRS----------");
+			enableGPRS();
 	}
+
+	if(fona.GPRSstate() == GPRS_CONNECTED){
+		Serial.println("GPRS Enabled----------");
+	}
+
   }
 }
 
@@ -2574,14 +2578,13 @@ void enableGPRS()
 {
 	// fona.setGPRSNetworkSettings(FONAFlashStringPtr(gprs_apn), FONAFlashStringPtr(gprs_username), FONAFlashStringPtr(gprs_password));
 	int retry_count = 0;
-	while ((fona.GPRSstate() != GPRS_CONNECTED) && (retry_count < 40))
+	while ((fona.GPRSstate() != GPRS_CONNECTED) && (retry_count < 5))
 	{
 		delay(3000);
 		fona.enableGPRS(true);
 		retry_count++;
 	}
 
-	fona.enableGPRS(true);
 }
 
 void disableGPRS()
@@ -4633,8 +4636,12 @@ void loop(void) {
 	act_micro = micros();
 	act_milli = millis();
 	send_now = msSince(starttime) > cfg::sending_intervall_ms;
+	if(msSince(starttime) - lastPrintTime > 1000){
+	debug_outln_info("Send Now Status: " + String (send_now));
+	debug_outln_info("msSince(starttime): " + String (msSince(starttime)));
 	// Wait at least 30s for each NTP server to sync
-
+	lastPrintTime = msSince(starttime);
+	}
 	if (!sntp_time_set && send_now &&
 			msSince(time_point_device_start_ms) < 1000 * 2 * 30 + 5000) {
 		debug_outln_info(F("NTP sync not finished yet, skipping send"));
@@ -4711,6 +4718,7 @@ void loop(void) {
 		}
 
 		if (cfg::pms_read) {
+			debug_outln_info(F("Reading Pms: ...."));
 			fetchSensorPMS(result_PMS);			
 		}
 
@@ -4719,7 +4727,11 @@ void loop(void) {
 		}
 	}
 
+	if(gps_init_failed){
+		debug_outln_info(F("Gps Failed to Initialize: ....."));
+	}
 	if (cfg::gps_read && !gps_init_failed) {
+		//debug_outln_info(F("Gps Initialized.....Reading GPS......."));
 		// process serial GPS data..
 		while (serialGPS->available() > 0) {
 			gps.encode(serialGPS->read());
@@ -4742,7 +4754,9 @@ void loop(void) {
 	yield();
 
 	if (send_now) {
+		if(!gsm_capable){
 		last_signal_strength = WiFi.RSSI();
+		}
 		RESERVE_STRING(data, LARGE_STR);
 		data = FPSTR(data_first_part);
 		RESERVE_STRING(result, MED_STR);
@@ -4758,6 +4772,7 @@ void loop(void) {
 			sum_send_time += sendSensorCommunity(result_SDS, SDS_API_PIN, FPSTR(SENSORS_SDS011), "SDS_");
 		}
 		if (cfg::pms_read) {
+			debug_outln_info(F("Sending PMS Data to sensors Africa......."));
 			data += result_PMS;
 			sum_send_time += sendCFA(result_PMS, PMS_API_PIN, FPSTR(SENSORS_PMSx003), "PMS_");
 			sum_send_time += sendSensorCommunity(result_PMS, PMS_API_PIN, FPSTR(SENSORS_PMSx003), "PMS_");
@@ -4776,6 +4791,7 @@ void loop(void) {
 		}
 		if (cfg::dht_read) {
 			// getting temperature and humidity (optional)
+			debug_outln_info(F("Sending DHT Data to CFA......."));
 			fetchSensorDHT(result);
 			data += result;
 			sum_send_time += sendCFA(result, DHT_API_PIN, FPSTR(SENSORS_DHT22), "DHT_");
@@ -4836,6 +4852,7 @@ void loop(void) {
 			result = emptyString;
 		}
 		if (cfg::gps_read) {
+			debug_outln_info(F("Sending GPS Data to CFA......."));
 			data += result_GPS;
 			sum_send_time += sendCFA(result_GPS, GPS_API_PIN, F("GPS"), "GPS_");
 			sum_send_time += sendSensorCommunity(result_GPS, GPS_API_PIN, F("GPS"), "GPS_");
@@ -4890,4 +4907,19 @@ void loop(void) {
 	if (sample_count % 500 == 0) {
 //		Serial.println(ESP.getFreeHeap(),DEC);
 	}
+}
+
+String getNetStatus(){
+	String res = "";
+	fonaSS.write("AT+CGATT?");
+	delay(2000);
+	res = fonaSS.readString();
+	while(fonaSS.available()){
+		res = fonaSS.readString();
+	}
+
+	debug_outln_info(F("Network Satus: -----------"));
+	debug_outln_info(res);
+	debug_outln_info(F("Network Satus: -----------"));
+	return res;
 }
