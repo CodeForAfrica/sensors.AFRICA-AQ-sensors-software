@@ -119,8 +119,14 @@ String myGprs_status = "GPRS Not Connected";
 String myGsm_status = "Not Connected to Network";
 String myGps_status = "GPS Not Connected";
 String myGps_coordinates = "Invalid";
+String pms_status = "Not Connected";
+String dht_status = "Not Connected";
 unsigned long actual_transmission_interval = 0;
 unsigned long last_actual_transmission_interval = 0;
+unsigned transmissio_interval = 30000;
+unsigned long start_send = 0;
+unsigned long transmission_time = 0;
+
 
 #if defined(INTL_BG)
 #include "intl_bg.h"
@@ -422,9 +428,9 @@ uint8_t GPRS_CONNECTED = 1;
 bool gsm_capable = 1;
 char gsm_pin[5] = "";
 
-char gprs_apn[100] = "internet";
-char gprs_username[100] = "";
-char gprs_password[100] = "";
+char gprs_apn[100] = "saf";
+char gprs_username[100] = "data";
+char gprs_password[100] = "data";
 #endif
 
 boolean trigP1 = false;
@@ -2529,6 +2535,7 @@ void connectGSM(){
     //gsm_capable = 0;
     //connectWifi();
   } 
+
   else {
     debug_outln(F("FONA is OK"), DEBUG_MIN_INFO);
 
@@ -2544,30 +2551,22 @@ void connectGSM(){
 
 	//fona.setGPRSNetworkSettings(F("internet"), F(""), F(""));
 
-	if(getNetStatus().indexOf("+CREG: 0,0")){
-		debug_outln_info(F("Device Not COnnected to Network ----------"));
-	}
-	else{
-		debug_outln_info(F("Device  COnnected to Network --------------"));
-	}
+	// if(getNetStatus().indexOf("+CREG: 0,0")){
+	// 	debug_outln_info(F("Device Not COnnected to Network ----------"));
+	// }
+	// else{
+	// 	debug_outln_info(F("Device  COnnected to Network --------------"));
+	// }
 
-	debug_outln_info(String(fona.getNetworkStatus()));
-    
+	// debug_outln_info(String(fona.getNetworkStatus()));
 	while((fona.getNetworkStatus() != GSM_CONNECTED) && (retry_count < 5)){
       Serial.println("Not registered on network");
 	  myGsm_status = "Not Connected to Network";
       delay(5000);
       retry_count++;
-      
-    //   if (retry_count > 30){
-    //     delay(5000);
-    //     restart_GSM();
-    //   }
-      
       flushSerial();
     }
 
-	Serial.println("Sim Registered to Network network");
 
 	if (fona.getNetworkStatus() == GSM_CONNECTED)
 	{
@@ -2587,18 +2586,17 @@ void enableGPRS()
 {
 	// fona.setGPRSNetworkSettings(FONAFlashStringPtr(gprs_apn), FONAFlashStringPtr(gprs_username), FONAFlashStringPtr(gprs_password));
 	int retry_count = 0;
-	while ((fona.GPRSstate() != GPRS_CONNECTED) && (retry_count < 5))
+	if (fona.GPRSstate() != GPRS_CONNECTED)
 	{	
 		myGprs_status = "GPRS Not Connected";
-		delay(3000);
-		retry_count++;
 	}
+	
 
 	if(fona.GPRSstate() == GPRS_CONNECTED){
 		myGprs_status = "GPRS Connected";
 	}
 
-	while ((fona.enableGPRS(true) != true) && (retry_count < 5))
+	while ((fona.enableGPRS(true) != true) && (retry_count < 10))
 	{
 		delay(3000);
 		Serial.println("Connection to GPRS APN Settings Failed----------");
@@ -2616,7 +2614,7 @@ void disableGPRS()
 
 void restart_GSM()
 {
-
+	debug_outln_info(F("Restarting GSM Module"));
 	flushSerial();
 
 	fonaSerial->begin(4800);
@@ -2627,6 +2625,7 @@ void restart_GSM()
 	}
 
 	unlock_pin();
+	
 
 	enableGPRS();
 }
@@ -2652,7 +2651,7 @@ static void unlock_pin()
  *****************************************************************/
 static unsigned long sendData(const LoggerEntry logger, const String& data, const int pin, const char* host, const char* url) {
 #if defined(ESP8266)
-	unsigned long start_send = millis();
+	start_send = millis();
 	const __FlashStringHelper* contentType;
 	int result = 0;
 	int port;
@@ -2725,7 +2724,7 @@ static unsigned long sendData(const LoggerEntry logger, const String& data, cons
 			
 		
 		if(fona.GPRSstate() != GPRS_CONNECTED){
-		debug_out(F("\n************* Reconnect GPRS *************"), DEBUG_MIN_INFO); 
+		debug_out(F("\n************* Reconnect GPRS *************\n"), DEBUG_MIN_INFO); 
 		enableGPRS();
 		}
 
@@ -2801,6 +2800,7 @@ static unsigned long sendData(const LoggerEntry logger, const String& data, cons
 
 		wdt_reset();
 		yield();
+		transmission_time = millis() - start_send;
 		return millis() - start_send;
 	#endif
 }
@@ -2937,8 +2937,10 @@ static void fetchSensorDHT(String& s) {
 			h = dht.readHumidity();
 		}
 		if (isnan(t) || isnan(h)) {
+			dht_status = "Not Connected";
 			debug_outln_error(F("DHT11/DHT22 read failed"));
 		} else {
+			dht_status = "Connected";
 			last_value_DHT_T = t;
 			last_value_DHT_H = h;
 			add_Value2Json(s, F("temperature"), FPSTR(DBG_TXT_TEMPERATURE), last_value_DHT_T);
@@ -3291,6 +3293,7 @@ static void fetchSensorPMS(String& s) {
 						debug_outln_verbose(F("PM2.5 (sec.): "), String(pm25_serial));
 						debug_outln_verbose(F("PM10 (sec.) : "), String(pm10_serial));
 						pms_val_count++;
+						pms_status = "Connected";
 					}
 					len = 0;
 					checksum_ok = false;
@@ -3701,13 +3704,15 @@ static void fetchSensorGPS(String& s) {
 	}
 
 	if (send_now) {
-		debug_outln_info(F("Lat: "), String(last_value_GPS_lat, 6));
-		debug_outln_info(F("Lng: "), String(last_value_GPS_lon, 6));
+		// debug_outln_info(F("Lat: "), String(last_value_GPS_lat, 6));
+		// debug_outln_info(F("Lng: "), String(last_value_GPS_lon, 6));
+		debug_outln_info(F("Lat: "), String(last_value_GPS_lat, 14));
+		debug_outln_info(F("Lng: "), String(last_value_GPS_lon, 14));
 		debug_outln_info(F("Date: "), last_value_GPS_date);
 		debug_outln_info(F("Time "), last_value_GPS_time);
 
-		add_Value2Json(s, F("GPS_lat"), String(last_value_GPS_lat, 6));
-		add_Value2Json(s, F("GPS_lon"), String(last_value_GPS_lon, 6));
+		add_Value2Json(s, F("GPS_lat"), String(last_value_GPS_lat, 14));
+		add_Value2Json(s, F("GPS_lon"), String(last_value_GPS_lon, 14));
 		add_Value2Json(s, F("GPS_height"), F("Altitude: "), last_value_GPS_alt);
 		add_Value2Json(s, F("GPS_timestamp"), last_value_GPS_timestamp);
 		debug_outln_info(FPSTR(DBG_TXT_SEP));
@@ -4659,18 +4664,27 @@ void loop(void) {
 
 	act_micro = micros();
 	act_milli = millis();
-	send_now = msSince(starttime) > cfg::sending_intervall_ms;
+	
+	
+
+	send_now = msSince(starttime) > (transmissio_interval - transmission_time) || msSince(starttime) > transmissio_interval ;
 	if(msSince(starttime) - lastPrintTime > 5000){
-	debug_outln_info("_____________________________________________________");
-	debug_outln_info("Send Now Status: " + String (send_now));
-	debug_outln_info("msSince(starttime): " + String (msSince(starttime)));
-	debug_outln_info("GSM Status: " + String (myGsm_status));
-	debug_outln_info("GPRS Status: " + String (myGprs_status));
-	debug_outln_info("GPS Status: " + String (myGps_status));
-	debug_outln_info("GPRS Coordinates: " + String (myGps_coordinates));
-	actual_transmission_interval = msSince(starttime) - last_actual_transmission_interval;
-	debug_outln_info("Actual Transmission Interval: " + String (actual_transmission_interval));
-	debug_outln_info("_____________________________________________________");
+		debug_outln_info("_____________________________________________________");
+		debug_outln_info("esp_chipid: " + String (esp_chipid));
+		debug_outln_info("transmission_time: " + String (transmission_time));
+		debug_outln_info("Send Now Status: " + String (send_now));
+		debug_outln_info("msSince(starttime): " + String (msSince(starttime)));
+		debug_outln_info("transmissio_interval: " + String (transmissio_interval));
+		debug_outln_info("transmissio_interval - transmission_time: " + String (transmissio_interval - transmission_time));
+		debug_outln_info("msSince(starttime) > transmissio_interval: " + String (msSince(starttime) > transmissio_interval));
+		debug_outln_info("dht Status: " + String (dht_status));
+		debug_outln_info("pms Status: " + String (pms_status));
+		debug_outln_info("GSM Status: " + String (myGsm_status));
+		debug_outln_info("GPRS Status: " + String (myGprs_status));
+		debug_outln_info("GPS Status: " + String (myGps_status));
+		debug_outln_info("GPRS Coordinates: " + String (myGps_coordinates));
+		debug_outln_info("Actual Transmission Interval: " + String (actual_transmission_interval));
+		debug_outln_info("_____________________________________________________");
 	
 	// Wait at least 30s for each NTP server to sync
 	lastPrintTime = msSince(starttime);
@@ -4925,7 +4939,8 @@ void loop(void) {
 		}
 
 		//Data Transmission Is Over
-		last_actual_transmission_interval = act_milli;
+		actual_transmission_interval = act_milli - last_actual_transmission_interval;
+		last_actual_transmission_interval = millis();
 		disableGPRS();
 
 		// reconnect to WiFi if disconnected
