@@ -2823,7 +2823,8 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 			if (SIM_USABLE)
 			{
 				// if (!GPRS_init())
-				GSM_soft_reset();
+				// GSM_soft_reset();
+				restart_GSM();
 			}
 		}
 	}
@@ -2838,12 +2839,23 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 		gprs_request_head += F("X-Sensor: esp8266-");
 		gprs_request_head += esp_chipid;
 
-		debug_out(F("Start connecting via GPRS"), DEBUG_MIN_INFO);
-		debug_out(F("HOST "), DEBUG_MIN_INFO);
-		debug_out(s_Host, DEBUG_MIN_INFO);
-		debug_out(F("URL "), DEBUG_MIN_INFO);
-		debug_out(s_url, DEBUG_MIN_INFO);
-		debug_out(gprs_request_head, DEBUG_MIN_INFO);
+		// debug_out(F("Start connecting via GPRS"), DEBUG_MIN_INFO);
+		// debug_out(F("HOST "), DEBUG_MIN_INFO);
+		// debug_out(s_Host, DEBUG_MIN_INFO);
+		// debug_out(F("URL "), DEBUG_MIN_INFO);
+		// debug_out(s_url, DEBUG_MIN_INFO);
+		// debug_out(gprs_request_head, DEBUG_MIN_INFO);
+
+		// #ifdef QUECTEL
+		String Quectel_headers[3];
+		Quectel_headers[0] = "X-PIN: " + String(pin);
+		// Quectel_headers[1] = "X-Sensor: " + esp_chipid;
+		Quectel_headers[1] = "X-Sensor: esp8266-15355455";			 // testing node
+		Quectel_headers[2] = "Content-Type: " + String(contentType); // 30
+
+		int header_size = sizeof(Quectel_headers) / sizeof(Quectel_headers[0]);
+
+		// #endif
 
 		const char *data_copy = data.c_str();
 		char gprs_data[strlen(data_copy)];
@@ -2861,10 +2873,16 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 		debug_out(F("http://"), DEBUG_MIN_INFO);
 		debug_out(gprs_url, DEBUG_MIN_INFO);
 		debug_out(gprs_data, DEBUG_MIN_INFO);
-
+		Serial.println("GPRS REQUEST HEAD:");
+		Serial.println(gprs_request_head);
+		Serial.println();
 		flushSerial();
 		debug_out(F("## Sending via gsm\n\n"), DEBUG_MIN_INFO);
 
+#ifdef QUECTEL
+		QUECTEL_POST((char *)gprs_url, Quectel_headers, header_size, data, data.length());
+		// ToDo: close HTTP session/ PDP context
+#else
 		if (!fona.HTTP_POST_start((char *)gprs_url, F("application/json"), gprs_request_head, (uint8_t *)gprs_data, strlen(gprs_data), &statuscode, (uint16_t *)&length))
 		{
 			debug_outln_error(F("Failed with status code "));
@@ -2893,6 +2911,7 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 		debug_out(F("\n\n## End sending via gsm \n\n"), DEBUG_MIN_INFO);
 		fona.HTTP_POST_end();
 		disableGPRS();
+#endif
 	}
 	else if (WiFi.status() == WL_CONNECTED)
 	{
@@ -5043,6 +5062,19 @@ void setup(void)
 	{
 		is_SDS_running = SDS_cmd(PmSensorCmd::Stop);
 		Serial.println("Attempting to setup GSM connection");
+
+		pinMode(QUECTEL_PWR_KEY, OUTPUT);
+		// pinMode(9, OUTPUT);
+		// // digitalWrite(16, HIGH);
+		// // delay(1000);
+		// // pinMode(16, OUTPUT);
+		// // digitalWrite(16, LOW);
+		// // delay(2500);
+		// // pinMode(16, OUTPUT);
+		// // digitalWrite(16, HIGH);
+		// digitalWrite(9, LOW);
+		delay(5000);
+
 		if (!GSM_init(fonaSerial))
 		{
 			Serial.println("GSM not fully configured");

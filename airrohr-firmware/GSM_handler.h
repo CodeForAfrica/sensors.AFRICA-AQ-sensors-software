@@ -2,7 +2,12 @@
 #include <Adafruit_FONA.h>
 #include "ext_def.h"
 
-SoftwareSerial fonaSS(FONA_TX, FONA_RX);
+// SoftwareSerial fonaSS(FONA_TX, FONA_RX);
+#define MCU_RXD D5
+#define MCU_TXD D6
+#define QUECTEL_PWR_KEY D8
+#define QUECTEL_DTR D9
+SoftwareSerial fonaSS(MCU_RXD, MCU_TXD); // Testing Quectel Board
 SoftwareSerial *fonaSerial = &fonaSS;
 Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
 
@@ -27,14 +32,20 @@ void GSM_soft_reset();
 void restart_GSM();
 void enableGPRS();
 void flushSerial();
-
+void QUECTEL_POST(char *url, String headers[], int header_size, const String &data, int data_length);
 // Set a decent delay before this to warm up the GSM module
 bool GSM_init(SoftwareSerial *gsm_serial)
 { // Pass a ptr to SoftwareSerial GSM instance
-    gsm_serial->begin(4800);
+    gsm_serial->begin(115200);
     String error_msg = "";
     // Check if there is serial communication with a GSM module
-    if (!fona.begin(*gsm_serial))
+    /* if (!fona.begin(*gsm_serial)) */
+    fona.begin(*gsm_serial);
+    // digitalWrite(QUECTEL_PWR_KEY, LOW);
+    // delay(3000);
+    // digitalWrite(QUECTEL_PWR_KEY, HIGH);
+    // delay(5000);
+    if (!fona.sendCheckReply(F("AT"), F("OK")))
     {
         error_msg = "Could not find GSM module";
         GSM_INIT_ERROR = error_msg;
@@ -92,7 +103,7 @@ bool GSM_init(SoftwareSerial *gsm_serial)
     }
 
     // Set GPRS APN details
-    fona.setGPRSNetworkSettings(F(GPRS_APN), F(GPRS_USERNAME), F(GPRS_PASSWORD));
+    // fona.setGPRSNetworkSettings(F(GPRS_APN), F(GPRS_USERNAME), F(GPRS_PASSWORD));
 
     // Attempt to enable GPRS
     Serial.println("Attempting to enable GPRS");
@@ -151,11 +162,11 @@ String handle_AT_CMD(String cmd, int _delay)
     {
         RESPONSE += fona.readString();
     }
-    // Serial.println();
-    // Serial.println("GSM RESPONSE:");
-    // Serial.println("-------");
-    // Serial.print(RESPONSE);
-    // Serial.println("-----");
+    Serial.println();
+    Serial.println("GSM RESPONSE:");
+    Serial.println("-------");
+    Serial.print(RESPONSE);
+    Serial.println("-----");
 
     return RESPONSE;
 }
@@ -226,7 +237,29 @@ bool GPRS_init()
         return GPRS_CONNECTED;
     }
 
+#ifdef QUECTEL
+
+    if (!fona.sendCheckReply(F("AT+QICSGP=1,1"), F("OK"), 3000))
+    {
+        err = "Failed to config GPRS PDP context";
+        GSM_INIT_ERROR = err;
+        Serial.println(err);
+        GPRS_CONNECTED = false;
+        return GPRS_CONNECTED;
+    }
+
+    if (!fona.sendCheckReply(F("AT+QIACT=1"), F("OK"), 3000))
+    {
+        err = "Failed to activate GPRS PDP context";
+        GSM_INIT_ERROR = err;
+        Serial.println(err);
+        GPRS_CONNECTED = false;
+        return GPRS_CONNECTED;
+    }
+
+#else
     String res = handle_AT_CMD("AT+SAPBR=1,1"); // Enable GPRS
+    String res = handle_AT_CMD("AT+QCFG=\"gprsattach\",1");
     if (res.indexOf("OK") == -1)
     {
         err = "Failed to enable GPRS";
@@ -235,6 +268,8 @@ bool GPRS_init()
         GPRS_CONNECTED = false;
         return GPRS_CONNECTED;
     }
+#endif
+
     GPRS_CONNECTED = true;
     return GPRS_CONNECTED;
 }
@@ -270,11 +305,11 @@ void restart_GSM()
     Serial.println("Restarting GSM");
     //! The AQ PCB board has the GSM reset physically connected to the ESP chip
     // GSM_soft_reset();
-    if (!fona.begin(*fonaSerial))
-    {
-        Serial.println("Couldn't find GSM");
-        return;
-    }
+    // if (!fona.begin(*fonaSerial))
+    // {
+    //     Serial.println("Couldn't find GSM");
+    //     return;
+    // }
 
     if (!GSM_init(fonaSerial))
     {
@@ -314,3 +349,73 @@ void flushSerial()
     while (fonaSS.available())
         fonaSS.read();
 }
+
+/// @brief Easy implementation of Quectel HTTP functionality
+/// @param url url for http request sans protocol
+/// @param headers array of request headers
+/// @param header_size size of the headers array
+/// @param data post body data
+/// @param data_length length of the data
+void QUECTEL_POST(char *url, String headers[], int header_size, const String &data, int data_length)
+{
+    /* SETTING request headers
+    ! Headers are sent in two formats
+    1. Format 0: headers are sent before post body
+    2. Format 1: headers are sent as part of the body
+    */
+
+    // Using format 0
+
+    // Config URL
+    // String HTTP_SETUP = "AT+QHTTPURL=" + String(strlen(url), DEC) + ",10,60";
+
+    String HTTP_CFG = "AT+QHTTPCFG=\"url\",\"http://" + String(url) + "\""; // protocol must be set before URL
+    Serial.print("Quectel URL config: ");
+    Serial.println(HTTP_CFG);
+    handle_AT_CMD(HTTP_CFG);
+
+    fona.sendCheckReply(F("AT+QHTTPCFG=\"contextid\",1"), F("OK"));      // set context id
+    fona.sendCheckReply(F("AT+QHTTPCFG=\"requestheader\",0"), F("OK"));  // disable request headers
+    fona.sendCheckReply(F("AT+QHTTPCFG=\"responseheader\",1"), F("OK")); // enable response headers
+    fona.sendCheckReply(F("AT+QHTTPCFG=\"rspout/auto\",1"), F("OK"));    // enable auto response and "disable" HTTTPREAD
+
+    for (int i = 0; i < header_size; i++)
+    {
+        HTTP_CFG = "AT+QHTTPCFG=\"header\",\"" + headers[i] + "\"";
+        Serial.println(HTTP_CFG);
+        // fonaSerial->println(HTTP_CFG);
+        handle_AT_CMD(HTTP_CFG);
+    }
+
+    // POST data
+    HTTP_CFG = "AT+QHTTPPOST=" + String(data_length) + ",30,60";
+    Serial.println(HTTP_CFG);
+    // fonaSerial->println(HTTP_CFG);
+    handle_AT_CMD(HTTP_CFG);
+    Serial.print("Quectel post body: ");
+    Serial.println(data);
+    handle_AT_CMD(data, 10000);
+}
+
+// Testing data
+// http://staging.api.sensors.africa/v1/push-sensor-data/
+
+// POST /v1/push-sensor-data/\r\nHost: http://staging.api.sensors.africa\r\nAccept: */*\r\nUser-Agent: QUECTEL EC200\r\nContent-Type: application/json\r\nX-Sensor: esp8266-15355455\r\nX-PIN: 1\r\nContent-Length: 385\r\n\r\n{"software_version": "NRZ-2020-129", "sensordatavalues":[{"value_type":"P0","value":"7.80"},{"value_type":"P1","value":"10.50"},{"value_type":"P2","value":"13.40"}]}\r\n
+// data length 252
+
+// Accept: */*\r\nUser-Agent: QUECTEL EC200\r\nContent-Type: application/json\r\nX-Sensor: esp8266-15355455\r\nX-PIN: 1\r\nContent-Length: 165\r\n\r\n{"software_version": "NRZ-2020-129", "sensordatavalues":[{"value_type":"P0","value":"7.80"},{"value_type":"P1","value":"10.50"},{"value_type":"P2","value":"13.40"}]}\r\n
+/// 1234
+
+// AT commands sequence
+
+// AT+CGATT=1
+// AT+QICSGP=1,1,"safaricom","saf","data"
+// AT+QIACT=1
+// AT+QIACT?
+// AT+QHTTPCFG="contextid",1
+// AT+QHTTPCFG="requestheader",1
+// AT+QHTTPCFG="responseheader",1
+// AT+QHTTPURL=54,30,60
+// http://staging.api.sensors.africa/v1/push-sensor-data/
+// AT+QHTTPPOST=385,30,60
+// AT+QHTTPREAD
