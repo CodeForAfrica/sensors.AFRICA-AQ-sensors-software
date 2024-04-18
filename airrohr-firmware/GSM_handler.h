@@ -276,7 +276,18 @@ bool GPRS_init()
 
 void GSM_soft_reset()
 {
+#ifdef QUECTEL
+    // ! Observation per v1 of Quectel PCB is that it POWERS BACK ON immediately after sending POWER DOWN command
+    if (!fona.sendCheckReply(F("AT+QPOWD"), F("POWERED DOWN")))
+    {
+        Serial.println("Failed to power down Quectel module");
+    }
+    else
+    {
+        delay(10000); // Give module enough time to register to network
+    }
 
+#elif
     fona.enableGPRS(false); // basically shut down GPRS service
 
     if (!fona.sendCheckReply(F("AT+CFUN=1"), F("OK")))
@@ -284,6 +295,8 @@ void GSM_soft_reset()
         Serial.println("Soft resetting GSM with full functionality failed!");
         // return;
     }
+
+#endif
 
     if (!GSM_init(fonaSerial))
     {

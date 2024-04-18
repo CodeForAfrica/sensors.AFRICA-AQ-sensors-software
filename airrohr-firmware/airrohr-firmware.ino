@@ -2823,8 +2823,8 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 			if (SIM_USABLE)
 			{
 				// if (!GPRS_init())
-				// GSM_soft_reset();
-				restart_GSM();
+				GSM_soft_reset();
+				//restart_GSM();
 			}
 		}
 	}
