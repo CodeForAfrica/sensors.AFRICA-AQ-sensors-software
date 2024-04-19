@@ -280,12 +280,12 @@ void GSM_soft_reset()
     // ! Observation per v1 of Quectel PCB is that it POWERS BACK ON immediately after sending POWER DOWN command
     if (fona.sendCheckReply(F("AT+QPOWD"), F("POWERED DOWN")))
     {
-        Serial.println("Failed to power down Quectel module");
+        Serial.println("Restarting QUECTEL GSM");
+        delay(10000); // Give module enough time to register to network
     }
     else
     {
-        Serial.println("Restarting QUECTEL GSM");
-        delay(10000); // Give module enough time to register to network
+        Serial.println("Failed to power down Quectel module");
     }
 
 #else
