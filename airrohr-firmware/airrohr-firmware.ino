@@ -2814,17 +2814,14 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 	request_head += String(data.length(), DEC) + "\r\n";
 	request_head += F("Connection: close\r\n\r\n");
 
-	// if (fona.GPRSstate() != 1)
 	if (!GPRS_CONNECTED)
 	{
 		if (!GPRS_init())
 		{
-			// GPRS_CONNECTED = false;
+
 			if (SIM_USABLE)
 			{
-				// if (!GPRS_init())
 				GSM_soft_reset();
-				//restart_GSM();
 			}
 		}
 	}
@@ -2849,8 +2846,8 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 		// #ifdef QUECTEL
 		String Quectel_headers[3];
 		Quectel_headers[0] = "X-PIN: " + String(pin);
-		// Quectel_headers[1] = "X-Sensor: " + esp_chipid;
-		Quectel_headers[1] = "X-Sensor: esp8266-15355455";			 // testing node
+		Quectel_headers[1] = "X-Sensor: esp8266-" + esp_chipid;
+		// Quectel_headers[1] = "X-Sensor: esp8266-15355455";			 // testing node, comment and insert desired testing node ID
 		Quectel_headers[2] = "Content-Type: " + String(contentType); // 30
 
 		int header_size = sizeof(Quectel_headers) / sizeof(Quectel_headers[0]);
