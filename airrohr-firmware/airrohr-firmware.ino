@@ -2836,7 +2836,7 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 		gprs_request_head += String(pin) + "\\r\\n";
 		gprs_request_head += F("X-Sensor: esp8266-");
 		// gprs_request_head += esp_chipid;
-		gprs_request_head += F("simcom-test");
+		gprs_request_head += F("simcom-noise-test");
 
 		debug_out(F("Start connecting via GPRS"), DEBUG_MIN_INFO);
 		debug_out(F("HOST "), DEBUG_MIN_INFO);
