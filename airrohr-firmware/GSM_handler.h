@@ -28,6 +28,8 @@ void restart_GSM();
 void enableGPRS();
 void flushSerial();
 
+int GPRS_INIT_FAIL_COUNT = 0;
+
 // Set a decent delay before this to warm up the GSM module
 bool GSM_init(SoftwareSerial *gsm_serial)
 { // Pass a ptr to SoftwareSerial GSM instance
@@ -91,12 +93,14 @@ bool GSM_init(SoftwareSerial *gsm_serial)
         return false;
     }
 
+    handle_AT_CMD("AT+COPS?");
+
     // Set GPRS APN details
-    fona.setGPRSNetworkSettings(F(GPRS_APN), F(GPRS_USERNAME), F(GPRS_PASSWORD));
+    // fona.setGPRSNetworkSettings(F(GPRS_APN), F(GPRS_USERNAME), F(GPRS_PASSWORD));
 
     // Attempt to enable GPRS
     Serial.println("Attempting to enable GPRS");
-    delay(2000);
+    // delay(2000);
 
     if (!GPRS_init())
         return false;
@@ -151,11 +155,11 @@ String handle_AT_CMD(String cmd, int _delay)
     {
         RESPONSE += fona.readString();
     }
-    // Serial.println();
-    // Serial.println("GSM RESPONSE:");
-    // Serial.println("-------");
-    // Serial.print(RESPONSE);
-    // Serial.println("-----");
+    Serial.println();
+    Serial.println("GSM RESPONSE:");
+    Serial.println("-------");
+    Serial.print(RESPONSE);
+    Serial.println("-----");
 
     return RESPONSE;
 }
@@ -216,7 +220,11 @@ bool is_SIMCID_valid()
 bool GPRS_init()
 {
     String err = "";
-
+    if (fona.sendCheckReply(F("AT+CGATT?"), F("1"))) // equivalent to fona.GPRSstate()
+    {
+        GPRS_CONNECTED = true;
+        return GPRS_CONNECTED;
+    }
     if (!fona.sendCheckReply(F("AT+CGATT=1"), F("OK"), 10000))
     {
         err = "Failed to attach GPRS service";
@@ -244,19 +252,20 @@ void GSM_soft_reset()
 
     fona.enableGPRS(false); // basically shut down GPRS service
 
-    if (!fona.sendCheckReply(F("AT+CFUN=1"), F("OK")))
+    if (!fona.sendCheckReply(F("AT+CFUN=1,1"), F("OK")))
     {
         Serial.println("Soft resetting GSM with full functionality failed!");
         // return;
     }
-
-    if (!GSM_init(fonaSerial))
-    {
-        Serial.println("GSM not fully configured");
-        Serial.print("Failure point: ");
-        Serial.println(GSM_INIT_ERROR);
-        Serial.println();
-    }
+    delay(30000); // wait for GSM to warm up
+    // if (!GSM_init(fonaSerial))
+    // {
+    //     Serial.println("GSM not fully configured");
+    //     Serial.print("Failure point: ");
+    //     Serial.println(GSM_INIT_ERROR);
+    //     Serial.println();
+    // }
+    GSM_init(fonaSerial);
 }
 
 /***
@@ -290,7 +299,7 @@ void enableGPRS()
     // fona.setGPRSNetworkSettings(FONAFlashStringPtr(gprs_apn), FONAFlashStringPtr(gprs_username), FONAFlashStringPtr(gprs_password));
 
     int retry_count = 0;
-    while ((fona.GPRSstate() != GPRS_CONNECTED) && (retry_count < 40))
+    while ((fona.GPRSstate() != 0) && (retry_count < 40))
     {
         delay(3000);
         fona.enableGPRS(true);

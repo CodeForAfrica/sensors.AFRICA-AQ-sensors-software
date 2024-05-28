@@ -2814,15 +2814,14 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 	request_head += String(data.length(), DEC) + "\r\n";
 	request_head += F("Connection: close\r\n\r\n");
 
-	// if (fona.GPRSstate() != 1)
-	if (!GPRS_CONNECTED)
+	if (fona.GPRSstate() != 1)
 	{
 		if (!GPRS_init())
 		{
-			// GPRS_CONNECTED = false;
-			if (SIM_USABLE)
+
+			GPRS_INIT_FAIL_COUNT += 1;
+			if (SIM_USABLE && GPRS_INIT_FAIL_COUNT > 5)
 			{
-				// if (!GPRS_init())
 				GSM_soft_reset();
 			}
 		}
@@ -2836,7 +2835,8 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 		String gprs_request_head = F("X-PIN: ");
 		gprs_request_head += String(pin) + "\\r\\n";
 		gprs_request_head += F("X-Sensor: esp8266-");
-		gprs_request_head += esp_chipid;
+		// gprs_request_head += esp_chipid;
+		gprs_request_head += F("simcom-test");
 
 		debug_out(F("Start connecting via GPRS"), DEBUG_MIN_INFO);
 		debug_out(F("HOST "), DEBUG_MIN_INFO);
@@ -2869,7 +2869,7 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 		{
 			debug_outln_error(F("Failed with status code "));
 			debug_out(String(statuscode), DEBUG_ERROR); // !ERROR not handled correctly: POST in most cases is successul but the status code !=200
-			disableGPRS();
+			// disableGPRS();
 			return 0;
 		}
 		while (length > 0)
@@ -2892,7 +2892,7 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 		}
 		debug_out(F("\n\n## End sending via gsm \n\n"), DEBUG_MIN_INFO);
 		fona.HTTP_POST_end();
-		disableGPRS();
+		// disableGPRS();
 	}
 	else if (WiFi.status() == WL_CONNECTED)
 	{
