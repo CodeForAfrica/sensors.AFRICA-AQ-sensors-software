@@ -2814,15 +2814,19 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 	request_head += String(data.length(), DEC) + "\r\n";
 	request_head += F("Connection: close\r\n\r\n");
 
-	if (fona.GPRSstate() != 1)
+	if (!GPRS_CONNECTED)
 	{
 		if (!GPRS_init())
 		{
 
 			GPRS_INIT_FAIL_COUNT += 1;
-			if (SIM_USABLE && GPRS_INIT_FAIL_COUNT > 5)
-			{
+			Serial.print("GPRS INIT FAIL COUNT: ");
+			Serial.println(GPRS_INIT_FAIL_COUNT);
+			if (GPRS_INIT_FAIL_COUNT == 5)
+			{ //! RESET COUNTER
+				GPRS_INIT_FAIL_COUNT = 0;
 				GSM_soft_reset();
+				GSM_init(fonaSerial);
 			}
 		}
 	}
@@ -2835,8 +2839,7 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 		String gprs_request_head = F("X-PIN: ");
 		gprs_request_head += String(pin) + "\\r\\n";
 		gprs_request_head += F("X-Sensor: esp8266-");
-		// gprs_request_head += esp_chipid;
-		gprs_request_head += F("simcom-noise-test");
+		gprs_request_head += esp_chipid;
 
 		debug_out(F("Start connecting via GPRS"), DEBUG_MIN_INFO);
 		debug_out(F("HOST "), DEBUG_MIN_INFO);
@@ -4991,6 +4994,7 @@ static unsigned long sendDataToOptionalApis(const String &data)
 
 void setup(void)
 {
+
 	Serial.begin(9600); // Output to Serial at 9600 baud
 
 #if defined(ESP8266)
@@ -5031,7 +5035,8 @@ void setup(void)
 		debug_outln_error(F("ERROR: SELF TEST FAILED!"));
 		SOFTWARE_VERSION += F("-STF");
 	}
-
+	logEnabledAPIs();
+	logEnabledDisplays();
 	init_config();
 	init_display();
 	init_lcd();
@@ -5071,8 +5076,8 @@ void setup(void)
 	setupNetworkTime();
 
 	powerOnTestSensors();
-	logEnabledAPIs();
-	logEnabledDisplays();
+	// logEnabledAPIs();
+	// logEnabledDisplays();
 
 	delay(50);
 

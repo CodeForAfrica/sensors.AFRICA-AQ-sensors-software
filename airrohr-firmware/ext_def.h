@@ -138,9 +138,9 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 #define PPD_PIN_PM2 GPS_SERIAL_RX
 
 // GSM
-#define FONA_RX 2 // PIN assignment for noise sensor
-#define FONA_TX 0
-#define FONA_RST 4
+#define FONA_RX D5
+#define FONA_TX D6
+#define FONA_RST D8
 
 // define pins for status LEDs
 #define PMS_LED D3
@@ -209,7 +209,7 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 #endif
 
 // DHT22, temperature, humidity
-#define DHT_READ 0
+#define DHT_READ 1
 #define DHT_TYPE DHT22
 #define DHT_API_PIN 7
 
@@ -226,7 +226,7 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 #define SDS_API_PIN 1
 
 // PMS1003, PMS300, 3PMS5003, PMS6003, PMS7003
-#define PMS_READ 0
+#define PMS_READ 1
 #define PMS_API_PIN 1
 
 // Honeywell PM sensor
@@ -257,7 +257,7 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 #define DS18B20_API_PIN 13
 
 // DNMS Noise Measurement
-#define DNMS_READ 1
+#define DNMS_READ 0
 #define DNMS_API_PIN 15
 #define DNMS_CORRECTION "0.0"
 
@@ -310,5 +310,8 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 
 // Set debug level for serial output?
 #define DEBUG 3
+
+// Set VDD power configuration for GSM module. Can be external LIPO or separate power rail
+#define SEPARATE_GSM_PWR 1
 
 #endif
