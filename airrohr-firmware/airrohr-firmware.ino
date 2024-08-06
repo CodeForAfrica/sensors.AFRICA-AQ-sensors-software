@@ -2816,12 +2816,25 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 
 	if (!GPRS_CONNECTED)
 	{
+		// if (!GPRS_init())
+		// {
+
+		// 	if (SIM_USABLE)
+		// 	{
+		// 		GSM_soft_reset();
+		// 	}
+		// }
 		if (!GPRS_init())
 		{
 
-			if (SIM_USABLE)
-			{
+			GPRS_INIT_FAIL_COUNT += 1;
+			Serial.print("GPRS INIT FAIL COUNT: ");
+			Serial.println(GPRS_INIT_FAIL_COUNT);
+			if (GPRS_INIT_FAIL_COUNT == 5)
+			{ //! RESET COUNTER
+				GPRS_INIT_FAIL_COUNT = 0;
 				GSM_soft_reset();
+				GSM_init(fonaSerial);
 			}
 		}
 	}
@@ -2846,8 +2859,8 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 		// #ifdef QUECTEL
 		String Quectel_headers[3];
 		Quectel_headers[0] = "X-PIN: " + String(pin);
-		Quectel_headers[1] = "X-Sensor: esp8266-" + esp_chipid;
-		// Quectel_headers[1] = "X-Sensor: esp8266-15355455";			 // testing node, comment and insert desired testing node ID
+		// Quectel_headers[1] = "X-Sensor: esp8266-" + esp_chipid;
+		Quectel_headers[1] = "X-Sensor: esp8266-quectel-test";		 // testing node, comment and insert desired testing node ID
 		Quectel_headers[2] = "Content-Type: " + String(contentType); // 30
 
 		int header_size = sizeof(Quectel_headers) / sizeof(Quectel_headers[0]);
