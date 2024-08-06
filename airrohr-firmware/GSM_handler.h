@@ -33,6 +33,8 @@ void restart_GSM();
 void enableGPRS();
 void flushSerial();
 void QUECTEL_POST(char *url, String headers[], int header_size, const String &data, int data_length);
+int GPRS_INIT_FAIL_COUNT = 0;
+int HTTP_POST_FAIL = 0;
 // Set a decent delay before this to warm up the GSM module
 bool GSM_init(SoftwareSerial *gsm_serial)
 { // Pass a ptr to SoftwareSerial GSM instance
@@ -204,9 +206,11 @@ void SIM_PIN_Setup()
 
 bool is_SIMCID_valid()
 {
-    char res[21];
-    fona.getSIMCCID(res);
-    String ccid = String(res);
+    // char res[30];
+    // fona.getSIMCCID(res);
+    // Serial.println(res);
+    // String ccid = String(res);
+    String ccid = handle_AT_CMD("AT+CCID");
     if (ccid.indexOf("ERROR") > -1) // Means string has the word error
     {
         SIM_AVAILABLE = false;
@@ -215,10 +219,10 @@ bool is_SIMCID_valid()
 
     else
     {
-        strcpy(SIM_CID, res);
+        // strcpy(SIM_CID, res);
         SIM_AVAILABLE = true;
         Serial.print("SIM CCID: ");
-        Serial.println(SIM_CID);
+        Serial.println(ccid);
         return true;
     }
 }
@@ -228,13 +232,24 @@ bool GPRS_init()
 {
     String err = "";
 
-    if (!fona.sendCheckReply(F("AT+CGATT=1"), F("OK"), 10000))
+    // if (!fona.sendCheckReply(F("AT+CGATT=1"), F("OK"), 10000))
+    // {
+    //     err = "Failed to attach GPRS service";
+    //     GSM_INIT_ERROR = err;
+    //     Serial.println(err);
+    //     GPRS_CONNECTED = false;
+    //     return GPRS_CONNECTED;
+    // }
+    if (fona.sendCheckReply(F("AT+CGATT?"), F("0"))) // equivalent to fona.GPRSstate()
     {
-        err = "Failed to attach GPRS service";
-        GSM_INIT_ERROR = err;
-        Serial.println(err);
-        GPRS_CONNECTED = false;
-        return GPRS_CONNECTED;
+        if (!fona.sendCheckReply(F("AT+CGATT=1"), F("OK"), 3000))
+        {
+            err = "Failed to attach GPRS service";
+            GSM_INIT_ERROR = err;
+            Serial.println(err);
+            GPRS_CONNECTED = false;
+            return GPRS_CONNECTED;
+        }
     }
 
 #ifdef QUECTEL
@@ -276,36 +291,37 @@ bool GPRS_init()
 
 void GSM_soft_reset()
 {
-#ifdef QUECTEL
-    // ! Observation per v1 of Quectel PCB is that it POWERS BACK ON immediately after sending POWER DOWN command
-    if (fona.sendCheckReply(F("AT+QPOWD"), F("POWERED DOWN")))
-    {
-        Serial.println("Restarting QUECTEL GSM");
-        delay(10000); // Give module enough time to register to network
-    }
-    else
-    {
-        Serial.println("Failed to power down Quectel module");
-    }
+    // #ifdef QUECTEL
+    //     // ! Observation per v1 of Quectel PCB is that it POWERS BACK ON immediately after sending POWER DOWN command
+    //     if (fona.sendCheckReply(F("AT+QPOWD"), F("POWERED DOWN")))
+    //     {
+    //         Serial.println("Restarting QUECTEL GSM");
+    //         delay(10000); // Give module enough time to register to network
+    //     }
+    //     else
+    //     {
+    //         Serial.println("Failed to power down Quectel module");
+    //     }
 
-#else
+    // #else
     fona.enableGPRS(false); // basically shut down GPRS service
 
-    if (!fona.sendCheckReply(F("AT+CFUN=1"), F("OK")))
+    if (!fona.sendCheckReply(F("AT+CFUN=1,1"), F("OK")))
     {
         Serial.println("Soft resetting GSM with full functionality failed!");
         // return;
     }
+    Serial.println("Soft resetting the GSM module...");
+    delay(30000); // wait for GSM to warm up
+    // #endif
 
-#endif
-
-    if (!GSM_init(fonaSerial))
-    {
-        Serial.println("GSM not fully configured");
-        Serial.print("Failure point: ");
-        Serial.println(GSM_INIT_ERROR);
-        Serial.println();
-    }
+    // if (!GSM_init(fonaSerial))
+    // {
+    //     Serial.println("GSM not fully configured");
+    //     Serial.print("Failure point: ");
+    //     Serial.println(GSM_INIT_ERROR);
+    //     Serial.println();
+    // }
 }
 
 /***
@@ -405,10 +421,28 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
     HTTP_CFG = "AT+QHTTPPOST=" + String(data_length) + ",30,60";
     Serial.println(HTTP_CFG);
     // fonaSerial->println(HTTP_CFG);
-    handle_AT_CMD(HTTP_CFG);
+    String res = handle_AT_CMD(HTTP_CFG);
+    if (res.indexOf("OK") == -1)
+    {
+        HTTP_POST_FAIL += 1;
+        if (HTTP_POST_FAIL > 5)
+        {
+            HTTP_POST_FAIL = 0;
+            GSM_soft_reset();
+        }
+    }
     Serial.print("Quectel post body: ");
     Serial.println(data);
-    handle_AT_CMD(data, 10000);
+    res = handle_AT_CMD(data, 10000);
+    if (res.indexOf("OK") == -1)
+    {
+        HTTP_POST_FAIL += 1;
+        if (HTTP_POST_FAIL > 5)
+        {
+            HTTP_POST_FAIL = 0;
+            GSM_soft_reset();
+        }
+    }
 }
 
 // Testing data
