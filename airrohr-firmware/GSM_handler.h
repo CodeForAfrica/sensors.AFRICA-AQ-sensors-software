@@ -29,7 +29,6 @@ void enableGPRS();
 void flushSerial();
 
 int GPRS_INIT_FAIL_COUNT = 0;
-bool INITIAL_GSM_BOOT = false;
 // Set a decent delay before this to warm up the GSM module
 bool GSM_init(SoftwareSerial *gsm_serial)
 { // Pass a ptr to SoftwareSerial GSM instance
@@ -39,11 +38,6 @@ bool GSM_init(SoftwareSerial *gsm_serial)
     // restart GSM if the GSM is powered separately to remove pre-existing configurations
     String error_msg = "";
     // Check if there is serial communication with a GSM module
-    if (SEPARATE_GSM_PWR && !INITIAL_GSM_BOOT)
-    {
-        GSM_soft_reset();
-        INITIAL_GSM_BOOT = true;
-    }
 
     if (!fona.begin(*gsm_serial))
     {
