@@ -1,6 +1,9 @@
 #ifndef EXT_DEF_H
 #define EXT_DEF_H
 
+// Import Secrets
+#include "secrets.h"
+
 // Language config
 #define CURRENT_LANG INTL_LANG
 
@@ -15,7 +18,7 @@ const char WWW_PASSWORD[] PROGMEM = "feinstaub";
 
 // Sensor Wifi config (config mode)
 #define FS_SSID "sensorsAFRICA-"
-#define FS_PWD ""
+#define FS_PWD WEBSERVER_PWD
 
 // Where to send the data?
 #define SEND2CFA 1
