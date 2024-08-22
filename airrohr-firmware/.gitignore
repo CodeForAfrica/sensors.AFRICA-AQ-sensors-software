@@ -18,3 +18,4 @@ builds/
 .vscode/launch.json
 .travis.yml
 *.code-workspace
+secrets.h

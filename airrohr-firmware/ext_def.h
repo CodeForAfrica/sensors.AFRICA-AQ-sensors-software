@@ -1,6 +1,9 @@
 #ifndef EXT_DEF_H
 #define EXT_DEF_H
 
+// Import Secrets
+#include "secrets.h"
+
 // Language config
 #define CURRENT_LANG INTL_LANG
 
@@ -15,14 +18,14 @@ const char WWW_PASSWORD[] PROGMEM = "feinstaub";
 
 // Sensor Wifi config (config mode)
 #define FS_SSID "sensorsAFRICA-"
-#define FS_PWD ""
+#define FS_PWD WEBSERVER_PWD
 
 // Where to send the data?
 #define SEND2CFA 1
 #define SSL_CFA 0
 #define SEND2SENSORCOMMUNITY 0
 #define SSL_SENSORCOMMUNITY 0
-#define SEND2MADAVI 0
+#define SEND2MADAVI 1
 #define SSL_MADAVI 0
 #define SEND2SENSEMAP 0
 #define SEND2FSAPP 0
@@ -140,7 +143,9 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 // GSM
 #define FONA_RX D5
 #define FONA_TX D6
-#define FONA_RST D8
+#define FONA_RST D0
+// GSM MODEM
+#define QUECTEL EC200U - CN
 
 // define pins for status LEDs
 #define PMS_LED D3
@@ -310,8 +315,5 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 
 // Set debug level for serial output?
 #define DEBUG 3
-
-// Set VDD power configuration for GSM module. Can be external LIPO or separate power rail
-#define SEPARATE_GSM_PWR 1
 
 #endif
