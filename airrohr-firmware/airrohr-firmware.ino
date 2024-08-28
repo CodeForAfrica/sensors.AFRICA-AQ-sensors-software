@@ -2469,11 +2469,11 @@ static void webserver_images()
 {
 	server.sendHeader(F("Cache-Control"), F("max-age=2592000, public"));
 
-	if (server.arg("name") == F("luftdaten_logo"))
+	if (server.arg("name") == F("sensorsafrica_logo"))
 	{
-		debug_outln_info(F("ws: luftdaten_logo..."));
+		debug_outln_info(F("ws: sensorsafrica_logo..."));
 		server.send_P(200, TXT_CONTENT_TYPE_IMAGE_PNG,
-					  LUFTDATEN_INFO_LOGO_PNG, LUFTDATEN_INFO_LOGO_PNG_SIZE);
+					  SENSORSAFRICA_LOGO, SENSORSAFRICA_LOGO_PNG_SIZE);
 	}
 	else
 	{
