@@ -1,3 +1,10 @@
+/*****************************************************************
+ ***  html template
+ *****************************************************************/
+
+#ifndef HTML_CONTENT_H
+#define HTML_CONTENT_H
+
 const char TXT_CONTENT_TYPE_JSON[] PROGMEM = "application/json";
 const char TXT_CONTENT_TYPE_INFLUXDB[] PROGMEM = "application/x-www-form-urlencoded";
 const char TXT_CONTENT_TYPE_TEXT_HTML[] PROGMEM = "text/html; charset=utf-8";
@@ -67,9 +74,9 @@ const char TABLE_TAG_OPEN[] PROGMEM = "<table>";
 const char TABLE_TAG_CLOSE_BR[] PROGMEM = "</table>";
 const char EMPTY_ROW[] PROGMEM = "<tr><td colspan='3'>&nbsp;</td></tr>";
 
-const char WEB_PAGE_FOOTER[] PROGMEM = "<br/><br/><a href='/' style='display:inline;'>" INTL_BACK_TO_HOME "</a>"\
-                "<br/><br/><br/>"
-                "</div></body></html>\r\n";
+const char WEB_PAGE_FOOTER[] PROGMEM = "<br/><br/><a href='/' style='display:inline;'>" INTL_BACK_TO_HOME "</a>"
+                                       "<br/><br/><br/>"
+                                       "</div></body></html>\r\n";
 
 const char WEB_ROOT_PAGE_CONTENT[] PROGMEM = "<a href='/values'>{t}</a><br/>\
 <a href='/status'>{s}</a><br/>\
@@ -99,10 +106,10 @@ const char WEB_REMOVE_CONFIG_CONTENT[] PROGMEM = "<h3>" INTL_CONFIGURATION_REALL
 <td><a href='/'>" INTL_CANCEL "</a></td></tr></table>\
 ";
 
-const char WEB_RESET_CONTENT[] PROGMEM = "<h3>" INTL_REALLY_RESTART_SENSOR "</h3>" \
-"<table><tr><td><form method='POST' action'/reset'>" \
-"<input type='submit' class='s_red' name='submit' value='" INTL_RESTART "'/>"\
-"</form></td><td><a href='/'>" INTL_CANCEL "</a></td></tr></table>";
+const char WEB_RESET_CONTENT[] PROGMEM = "<h3>" INTL_REALLY_RESTART_SENSOR "</h3>"
+                                         "<table><tr><td><form method='POST' action'/reset'>"
+                                         "<input type='submit' class='s_red' name='submit' value='" INTL_RESTART "'/>"
+                                         "</form></td><td><a href='/'>" INTL_CANCEL "</a></td></tr></table>";
 
 const char WEB_IOS_REDIRECT[] PROGMEM = "<html><body>Redirecting...\
 <script type=\"text/javascript\">\
@@ -133,3 +140,5 @@ const char WEB_NC4k0[] PROGMEM = "NC4.0";
 const char WEB_NC10[] PROGMEM = "NC10";
 const char WEB_TPS[] PROGMEM = "TPS";
 const char WEB_GPS[] PROGMEM = "GPS";
+
+#endif
