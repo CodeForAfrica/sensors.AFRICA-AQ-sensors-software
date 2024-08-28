@@ -113,22 +113,6 @@ String SOFTWARE_VERSION(SOFTWARE_VERSION_STR);
 #include "./dnms_i2c.h"
 #include <Adafruit_FONA.h>
 
-/****************************************************************
- * Debug function declarations
- ****************************************************************/
-static void debug_out(const String &text, unsigned int level);
-static void debug_out(const __FlashStringHelper *text, unsigned int level);
-static void debug_outln(const String &text, unsigned int level);
-static void debug_outln_info(const String &text);
-static void debug_outln_verbose(const String &text);
-static void debug_outln_error(const __FlashStringHelper *text);
-static void debug_outln_info(const __FlashStringHelper *text);
-static void debug_outln_verbose(const __FlashStringHelper *text);
-static void debug_outln_info(const __FlashStringHelper *text, const String &option);
-static void debug_outln_info(const __FlashStringHelper *text, float value);
-static void debug_outln_verbose(const __FlashStringHelper *text, const String &option);
-static void debug_outln_info_bool(const __FlashStringHelper *text, const bool option);
-
 // display funtion declarations
 static void display_debug(const String &text1, const String &text2);
 static String check_display_value(double value, double undef, uint8_t len, uint8_t str_len);
@@ -416,95 +400,9 @@ const char JSON_SENSOR_DATA_VALUES[] PROGMEM = "sensordatavalues";
 
 // Refactored / to be refactored files
 #include "ext_def.h"
+#include "utils/_debug_helper.h"
 #include "webserver/webserver.h"
 #include "ca-root.h"
-
-/*****************************************************************
- * Debug output                                                  *
- *****************************************************************/
-
-#define debug_level_check(level) \
-	{                            \
-		if (level > cfg::debug)  \
-			return;              \
-	}
-
-static void debug_out(const String &text, unsigned int level)
-{
-	debug_level_check(level);
-	Serial.print(text);
-}
-
-static void debug_out(const __FlashStringHelper *text, unsigned int level)
-{
-	debug_level_check(level);
-	Serial.print(text);
-}
-
-static void debug_outln(const String &text, unsigned int level)
-{
-	debug_level_check(level);
-	Serial.println(text);
-}
-
-static void debug_outln_info(const String &text)
-{
-	debug_level_check(DEBUG_MIN_INFO);
-	Serial.println(text);
-}
-
-static void debug_outln_verbose(const String &text)
-{
-	debug_level_check(DEBUG_MED_INFO);
-	Serial.println(text);
-}
-
-static void debug_outln_error(const __FlashStringHelper *text)
-{
-	debug_level_check(DEBUG_ERROR);
-	Serial.println(text);
-}
-
-static void debug_outln_info(const __FlashStringHelper *text)
-{
-	debug_level_check(DEBUG_MIN_INFO);
-	Serial.println(text);
-}
-
-static void debug_outln_verbose(const __FlashStringHelper *text)
-{
-	debug_level_check(DEBUG_MED_INFO);
-	Serial.println(text);
-}
-
-static void debug_outln_info(const __FlashStringHelper *text, const String &option)
-{
-	debug_level_check(DEBUG_MIN_INFO);
-	Serial.print(text);
-	Serial.println(option);
-}
-
-static void debug_outln_info(const __FlashStringHelper *text, float value)
-{
-	debug_outln_info(text, String(value));
-}
-
-static void debug_outln_verbose(const __FlashStringHelper *text, const String &option)
-{
-	debug_level_check(DEBUG_MED_INFO);
-	Serial.print(text);
-	Serial.println(option);
-}
-
-static void debug_outln_info_bool(const __FlashStringHelper *text, const bool option)
-{
-	debug_level_check(DEBUG_MIN_INFO);
-	Serial.print(text);
-	Serial.println(String(option));
-}
-
-#undef debug_level_check
-
 /*****************************************************************
  * display values                                                *
  *****************************************************************/
