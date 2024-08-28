@@ -1,3 +1,6 @@
+#ifndef LANGUAGE_DEF_H
+#define LANGUAGE_DEF_H
+
 #if defined(INTL_BG)
 #include "intl_bg.h"
 #elif defined(INTL_CZ)
@@ -35,4 +38,6 @@
 #else
 #warning No language defined
 #include "intl_en.h"
+#endif
+
 #endif

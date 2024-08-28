@@ -2,7 +2,7 @@
 #define EXT_DEF_H
 
 #include "defines.h"
-
+#include "languages/lang_def.h"
 // Import Secrets
 #include "secrets.h"
 
