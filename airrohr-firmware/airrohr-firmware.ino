@@ -129,11 +129,14 @@ static void debug_outln_info(const __FlashStringHelper *text, float value);
 static void debug_outln_verbose(const __FlashStringHelper *text, const String &option);
 static void debug_outln_info_bool(const __FlashStringHelper *text, const bool option);
 
-#include "defines.h"
-#include "ext_def.h"
-#include "webserver/webserver.h"
-#include "ca-root.h"
+// display funtion declarations
+static void display_debug(const String &text1, const String &text2);
+static String check_display_value(double value, double undef, uint8_t len, uint8_t str_len);
 
+// other function declaritions
+static void writeConfig();
+static String delayToString(unsigned time_ms);
+static void sensor_restart();
 /******************************************************************
  * Constants                                                      *
  ******************************************************************/
@@ -178,6 +181,7 @@ bool dnms_init_failed = false;
 bool gps_init_failed = false;
 bool airrohr_selftest_failed = false;
 
+#include "defines.h"
 #include "./airrohr-cfg.h"
 
 /*****************************************************************
@@ -409,6 +413,11 @@ constexpr std::size_t array_num_elements(const T (&)[N])
 
 const char data_first_part[] PROGMEM = "{\"software_version\": \"" SOFTWARE_VERSION_STR "\", \"sensordatavalues\":[";
 const char JSON_SENSOR_DATA_VALUES[] PROGMEM = "sensordatavalues";
+
+// Refactored / to be refactored files
+#include "ext_def.h"
+#include "webserver/webserver.h"
+#include "ca-root.h"
 
 /*****************************************************************
  * Debug output                                                  *
