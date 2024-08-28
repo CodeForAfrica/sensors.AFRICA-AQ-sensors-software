@@ -5,8 +5,10 @@
 #ifndef WEBSERVER_H
 #define WEBSERVER_H
 
+#include "languages/lang_def.h"
 #include "html_helper.h"
 #include "sensors-africa-logo.h"
+#include "../namespace_cfg.h"
 
 // Function declarations
 static void setup_webserver();
