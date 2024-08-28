@@ -71,7 +71,6 @@ String SOFTWARE_VERSION(SOFTWARE_VERSION_STR);
 #include <FS.h> // must be first
 #include <ESP8266HTTPClient.h>
 #include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 #include <SoftwareSerial.h>
 #include <Hash.h>
@@ -113,6 +112,22 @@ String SOFTWARE_VERSION(SOFTWARE_VERSION_STR);
 #include "./sps30_i2c.h"
 #include "./dnms_i2c.h"
 #include <Adafruit_FONA.h>
+
+/****************************************************************
+ * Debug function declarations
+ ****************************************************************/
+static void debug_out(const String &text, unsigned int level);
+static void debug_out(const __FlashStringHelper *text, unsigned int level);
+static void debug_outln(const String &text, unsigned int level);
+static void debug_outln_info(const String &text);
+static void debug_outln_verbose(const String &text);
+static void debug_outln_error(const __FlashStringHelper *text);
+static void debug_outln_info(const __FlashStringHelper *text);
+static void debug_outln_verbose(const __FlashStringHelper *text);
+static void debug_outln_info(const __FlashStringHelper *text, const String &option);
+static void debug_outln_info(const __FlashStringHelper *text, float value);
+static void debug_outln_verbose(const __FlashStringHelper *text, const String &option);
+static void debug_outln_info_bool(const __FlashStringHelper *text, const bool option);
 
 #include "defines.h"
 #include "ext_def.h"
@@ -162,13 +177,6 @@ bool sht3x_init_failed = false;
 bool dnms_init_failed = false;
 bool gps_init_failed = false;
 bool airrohr_selftest_failed = false;
-
-#if defined(ESP8266)
-ESP8266WebServer server(80);
-#endif
-#if defined(ESP32)
-WebServer server(80);
-#endif
 
 #include "./airrohr-cfg.h"
 
