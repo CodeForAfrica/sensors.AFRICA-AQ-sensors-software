@@ -14,7 +14,7 @@ const char INTL_CONFIGURATION[] PROGMEM = "Inställningar";
 #define INTL_WIFI_SETTINGS "WLAN konfiguration"
 #define INTL_WIFI_NETWORKS "Laddar trådlösa nätverk..."
 #define INTL_LANGUAGE "Språk"
-const char INTL_NO_NETWORKS[] PROGMEM =  "Inga nätverk hittades";
+const char INTL_NO_NETWORKS[] PROGMEM = "Inga nätverk hittades";
 const char INTL_NETWORKS_FOUND[] PROGMEM = "Nätverk hittades: ";
 const char INTL_AB_HIER_NUR_ANDERN[] PROGMEM = "Ändra nedanför enbart om du verkligen vet vad du gör";
 const char INTL_SAVE[] PROGMEM = "Spara";
@@ -32,13 +32,13 @@ const char INTL_BMX280[] PROGMEM = "BMP280/BME280 ({t}, {h}, {p})";
 const char INTL_SHT3X[] PROGMEM = "SHT3X ({t}, {h})";
 const char INTL_DS18B20[] PROGMEM = "DS18B20 ({t})";
 const char INTL_DNMS[] PROGMEM = "DNMS ({l_a})";
-const char INTL_DNMS_CORRECTION[] PROGMEM ="korrigering i dB (A)";
+const char INTL_DNMS_CORRECTION[] PROGMEM = "korrigering i dB (A)";
 const char INTL_NEO6M[] PROGMEM = "GPS (NEO 6M)";
 const char INTL_BASICAUTH[] PROGMEM = "Aktivera BasicAuth";
 
 const char INTL_FS_WIFI_DESCRIPTION[] PROGMEM = "WiFi-sensor i konfigurationsläge";
 const char INTL_FS_WIFI_NAME[] PROGMEM = "Sensorns WLAN namn";
-const char INTL_MORE_SETTINGS[] PROGMEM ="Avancerade inställningar";
+const char INTL_MORE_SETTINGS[] PROGMEM = "Avancerade inställningar";
 const char INTL_AUTO_UPDATE[] PROGMEM = "Automatisk uppdatering";
 const char INTL_USE_BETA[] PROGMEM = "Använd beta-versioner";
 const char INTL_DISPLAY[] PROGMEM = "OLED SSD1306";
@@ -111,5 +111,3 @@ const char INTL_SIGNAL_QUALITY[] PROGMEM = "Kvalitet";
 #define INTL_SENSOR "Sensor"
 #define INTL_PARAMETER "Parameter"
 #define INTL_VALUE "Värde"
-
-#include "./airrohr-logo-common.h"

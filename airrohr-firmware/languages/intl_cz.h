@@ -32,7 +32,7 @@ const char INTL_BMX280[] PROGMEM = "BMP280/BME280 ({t}, {h}, {p})";
 const char INTL_SHT3X[] PROGMEM = "SHT3X ({t}, {h})";
 const char INTL_DS18B20[] PROGMEM = "DS18B20 ({t})";
 const char INTL_DNMS[] PROGMEM = "DNMS ({l_a})";
-const char INTL_DNMS_CORRECTION[] PROGMEM ="korekce v dB (A)";
+const char INTL_DNMS_CORRECTION[] PROGMEM = "korekce v dB (A)";
 const char INTL_NEO6M[] PROGMEM = "GPS (NEO 6M)";
 const char INTL_BASICAUTH[] PROGMEM = "Pøihlášení (heslem)";
 
@@ -111,5 +111,3 @@ const char INTL_SIGNAL_QUALITY[] PROGMEM = "Kvalita signálu";
 #define INTL_SENSOR "Modul"
 #define INTL_PARAMETER "Parametr"
 #define INTL_VALUE "Hodnota"
-
-#include "./airrohr-logo-common.h"

@@ -14,7 +14,7 @@ const char INTL_CONFIGURATION[] PROGMEM = "Konfiguration";
 #define INTL_WIFI_SETTINGS "WLAN Daten"
 #define INTL_WIFI_NETWORKS "Lade WLAN Netzwerke ..."
 #define INTL_LANGUAGE "Sprache"
-const char INTL_NO_NETWORKS[] PROGMEM =  "Keine Netzwerke gefunden";
+const char INTL_NO_NETWORKS[] PROGMEM = "Keine Netzwerke gefunden";
 const char INTL_NETWORKS_FOUND[] PROGMEM = "Netzwerke gefunden: ";
 const char INTL_AB_HIER_NUR_ANDERN[] PROGMEM = "Ab hier nur ändern, wenn Sie wirklich wissen, was Sie tun";
 const char INTL_SAVE[] PROGMEM = "Speichern";
@@ -37,13 +37,13 @@ const char INTL_BMX280[] PROGMEM = "BMP280/BME280 ({t}, {h}, {p})";
 const char INTL_SHT3X[] PROGMEM = "SHT3X ({t}, {h})";
 const char INTL_DS18B20[] PROGMEM = "DS18B20 ({t})";
 const char INTL_DNMS[] PROGMEM = "DNMS ({l_a})";
-const char INTL_DNMS_CORRECTION[] PROGMEM ="Korrekturwert&nbsp;in&nbsp;dB(A)";
+const char INTL_DNMS_CORRECTION[] PROGMEM = "Korrekturwert&nbsp;in&nbsp;dB(A)";
 const char INTL_NEO6M[] PROGMEM = "GPS (NEO 6M)";
 const char INTL_BASICAUTH[] PROGMEM = "BasicAuth aktivieren";
 
 const char INTL_FS_WIFI_DESCRIPTION[] PROGMEM = "Sensor WLAN Name im Konfigurationsmodus";
 const char INTL_FS_WIFI_NAME[] PROGMEM = "Name";
-const char INTL_MORE_SETTINGS[] PROGMEM ="Weitere Einstellungen";
+const char INTL_MORE_SETTINGS[] PROGMEM = "Weitere Einstellungen";
 const char INTL_AUTO_UPDATE[] PROGMEM = "Auto Update";
 const char INTL_USE_BETA[] PROGMEM = "Lade Beta Versionen";
 const char INTL_DISPLAY[] PROGMEM = "OLED SSD1306";
@@ -116,5 +116,3 @@ const char INTL_SIGNAL_QUALITY[] PROGMEM = "Qualität";
 #define INTL_SENSOR "Sensor"
 #define INTL_PARAMETER "Parameter"
 #define INTL_VALUE "Wert"
-
-#include "./airrohr-logo-common.h"

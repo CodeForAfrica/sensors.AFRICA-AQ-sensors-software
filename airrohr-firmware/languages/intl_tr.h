@@ -14,7 +14,7 @@ const char INTL_CONFIGURATION[] PROGMEM = "Yapılandırma";
 #define INTL_WIFI_SETTINGS "WiFi bağlantı ayarları"
 #define INTL_WIFI_NETWORKS " wifi ağlar yükleniyor ..."
 #define INTL_LANGUAGE "Lisan"
-const char INTL_NO_NETWORKS[] PROGMEM =  "No WiFi-Ağ Bulunamadı";
+const char INTL_NO_NETWORKS[] PROGMEM = "No WiFi-Ağ Bulunamadı";
 const char INTL_NETWORKS_FOUND[] PROGMEM = "Bulunan Ağlar: ";
 const char INTL_AB_HIER_NUR_ANDERN[] PROGMEM = "Ileri ayarlar: (Uzmanlar için)";
 const char INTL_SAVE[] PROGMEM = "Sakla";
@@ -32,13 +32,13 @@ const char INTL_BMX280[] PROGMEM = "BMP280/BME280 ({t}, {h}, {p})";
 const char INTL_SHT3X[] PROGMEM = "SHT3X ({t}, {h})";
 const char INTL_DS18B20[] PROGMEM = "DS18B20 ({t})";
 const char INTL_DNMS[] PROGMEM = "DNMS ({l_a})";
-const char INTL_DNMS_CORRECTION[] PROGMEM ="dB (A) 'da düzeltme";
+const char INTL_DNMS_CORRECTION[] PROGMEM = "dB (A) 'da düzeltme";
 const char INTL_NEO6M[] PROGMEM = "GPS (NEO 6M)";
 const char INTL_BASICAUTH[] PROGMEM = "yetkilendirme";
 
 const char INTL_FS_WIFI_DESCRIPTION[] PROGMEM = "WiFi Sensörü Yapılandırma modunda";
 const char INTL_FS_WIFI_NAME[] PROGMEM = "Isim";
-const char INTL_MORE_SETTINGS[] PROGMEM ="Daha fazla ayar";
+const char INTL_MORE_SETTINGS[] PROGMEM = "Daha fazla ayar";
 const char INTL_AUTO_UPDATE[] PROGMEM = "Yazılımı (Firmware) Otomatik güncelle ";
 const char INTL_USE_BETA[] PROGMEM = "Beta Yazılımı(Firmware) yükle";
 const char INTL_DISPLAY[] PROGMEM = "OLED SSD1306";
@@ -111,5 +111,3 @@ const char INTL_SIGNAL_QUALITY[] PROGMEM = "sinyal kalitesi";
 #define INTL_SENSOR "algılayıcı(Sensör)"
 #define INTL_PARAMETER "Parametre"
 #define INTL_VALUE "değer"
-
-#include "./airrohr-logo-common.h"

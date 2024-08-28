@@ -14,7 +14,7 @@ const char INTL_CONFIGURATION[] PROGMEM = "Налаштування";
 #define INTL_WIFI_SETTINGS "Параметри WiFi"
 #define INTL_WIFI_NETWORKS "Пошук WiFi мереж..."
 #define INTL_LANGUAGE "Мова"
-const char INTL_NO_NETWORKS[] PROGMEM =  "Не знайдено жодної Wifi мережі";
+const char INTL_NO_NETWORKS[] PROGMEM = "Не знайдено жодної Wifi мережі";
 const char INTL_NETWORKS_FOUND[] PROGMEM = "Знайдені мережі";
 const char INTL_AB_HIER_NUR_ANDERN[] PROGMEM = "Експертні параметри (тільки якщо ви розумієте, що робите)";
 const char INTL_SAVE[] PROGMEM = "Зберегти";
@@ -32,13 +32,13 @@ const char INTL_BMX280[] PROGMEM = "BMP280/BME280 ({t}, {h}, {p})";
 const char INTL_SHT3X[] PROGMEM = "SHT3X ({t}, {h})";
 const char INTL_DS18B20[] PROGMEM = "DS18B20 ({t})";
 const char INTL_DNMS[] PROGMEM = "DNMS ({l_a})";
-const char INTL_DNMS_CORRECTION[] PROGMEM ="корекція в дБ (А)";
+const char INTL_DNMS_CORRECTION[] PROGMEM = "корекція в дБ (А)";
 const char INTL_NEO6M[] PROGMEM = "GPS (NEO 6M)";
 const char INTL_BASICAUTH[] PROGMEM = "Авторизація";
 
 const char INTL_FS_WIFI_DESCRIPTION[] PROGMEM = "WiFi сенсор в режимі конфігурації";
 const char INTL_FS_WIFI_NAME[] PROGMEM = "Ім'я";
-const char INTL_MORE_SETTINGS[] PROGMEM ="Додаткові параметри";
+const char INTL_MORE_SETTINGS[] PROGMEM = "Додаткові параметри";
 const char INTL_AUTO_UPDATE[] PROGMEM = "Автооновлення мікропрограми";
 const char INTL_USE_BETA[] PROGMEM = "Встановлювати бета-версії мікропрограми";
 const char INTL_DISPLAY[] PROGMEM = "OLED SSD1306";
@@ -111,5 +111,3 @@ const char INTL_SIGNAL_QUALITY[] PROGMEM = "якість сигналу";
 #define INTL_SENSOR "Сенсор"
 #define INTL_PARAMETER "Параметр"
 #define INTL_VALUE "Значення"
-
-#include "./airrohr-logo-common.h"

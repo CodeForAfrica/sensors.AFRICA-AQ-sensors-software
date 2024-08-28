@@ -14,7 +14,7 @@ const char INTL_CONFIGURATION[] PROGMEM = "Konfiguracija";
 #define INTL_WIFI_SETTINGS "WiFi podešavanja"
 #define INTL_WIFI_NETWORKS "Učitavanje WiFi mreža ..."
 #define INTL_LANGUAGE "Jezik"
-const char INTL_NO_NETWORKS[] PROGMEM =  "Nije pronađena WiFi mreža";
+const char INTL_NO_NETWORKS[] PROGMEM = "Nije pronađena WiFi mreža";
 const char INTL_NETWORKS_FOUND[] PROGMEM = "Pronađene mreže: ";
 const char INTL_AB_HIER_NUR_ANDERN[] PROGMEM = "Napredna podešavanja (samo ako znate šta radite)";
 const char INTL_SAVE[] PROGMEM = "Sačuvaj";
@@ -32,13 +32,13 @@ const char INTL_BMX280[] PROGMEM = "BMP280/BME280 ({t}, {h}, {p})";
 const char INTL_SHT3X[] PROGMEM = "SHT3X ({t}, {h})";
 const char INTL_DS18B20[] PROGMEM = "DS18B20 ({t})";
 const char INTL_DNMS[] PROGMEM = "DNMS ({l_a})";
-const char INTL_DNMS_CORRECTION[] PROGMEM ="Korekcija u dB(A)";
+const char INTL_DNMS_CORRECTION[] PROGMEM = "Korekcija u dB(A)";
 const char INTL_NEO6M[] PROGMEM = "GPS (NEO 6M)";
 const char INTL_BASICAUTH[] PROGMEM = "Autorizacija";
 
 const char INTL_FS_WIFI_DESCRIPTION[] PROGMEM = "WiFi senzor u konfiguracionom režimu";
 const char INTL_FS_WIFI_NAME[] PROGMEM = "Naziv";
-const char INTL_MORE_SETTINGS[] PROGMEM ="Više podešavanja";
+const char INTL_MORE_SETTINGS[] PROGMEM = "Više podešavanja";
 const char INTL_AUTO_UPDATE[] PROGMEM = "Automatski ažuriraj firmver";
 const char INTL_USE_BETA[] PROGMEM = "Učitaj beta firmver";
 const char INTL_DISPLAY[] PROGMEM = "OLED SSD1306";
@@ -111,5 +111,3 @@ const char INTL_SIGNAL_QUALITY[] PROGMEM = "kvalitet signala";
 #define INTL_SENSOR "Senzor"
 #define INTL_PARAMETER "Parametar"
 #define INTL_VALUE "Vrednost"
-
-#include "./airrohr-logo-common.h"

@@ -14,7 +14,7 @@ const char INTL_CONFIGURATION[] PROGMEM = "Konfiguracja";
 #define INTL_WIFI_SETTINGS "Ustawienia WiFi"
 #define INTL_WIFI_NETWORKS "Ładowanie sieci WiFi..."
 #define INTL_LANGUAGE "Język"
-const char INTL_NO_NETWORKS[] PROGMEM =  "Nie znaleziono sieci WiFi";
+const char INTL_NO_NETWORKS[] PROGMEM = "Nie znaleziono sieci WiFi";
 const char INTL_NETWORKS_FOUND[] PROGMEM = "Znalezione sieci: ";
 const char INTL_AB_HIER_NUR_ANDERN[] PROGMEM = "Ustawienia zaawansowane (tylko gdy wiesz co robisz)";
 const char INTL_SAVE[] PROGMEM = "Zapisz";
@@ -32,13 +32,13 @@ const char INTL_BMX280[] PROGMEM = "BMP280/BME280 ({t}, {h}, {p})";
 const char INTL_SHT3X[] PROGMEM = "SHT3X ({t}, {h})";
 const char INTL_DS18B20[] PROGMEM = "DS18B20 ({t})";
 const char INTL_DNMS[] PROGMEM = "DNMS ({l_a})";
-const char INTL_DNMS_CORRECTION[] PROGMEM ="poprawka w dB(A)";
+const char INTL_DNMS_CORRECTION[] PROGMEM = "poprawka w dB(A)";
 const char INTL_NEO6M[] PROGMEM = "GPS (NEO 6M)";
 const char INTL_BASICAUTH[] PROGMEM = "Autoryzacja";
 
 const char INTL_FS_WIFI_DESCRIPTION[] PROGMEM = "Parametry WiFi w trybie konfiguracji czujnika";
 const char INTL_FS_WIFI_NAME[] PROGMEM = "Nazwa sieci";
-const char INTL_MORE_SETTINGS[] PROGMEM ="Więcej ustawień";
+const char INTL_MORE_SETTINGS[] PROGMEM = "Więcej ustawień";
 const char INTL_AUTO_UPDATE[] PROGMEM = "Aktualizuj firmware automatycznie";
 const char INTL_USE_BETA[] PROGMEM = "Załaduj firmware beta";
 const char INTL_DISPLAY[] PROGMEM = "OLED SSD1306";
@@ -111,5 +111,3 @@ const char INTL_SIGNAL_QUALITY[] PROGMEM = "Jakość sygnału";
 #define INTL_SENSOR "Czujnik"
 #define INTL_PARAMETER "Parametr"
 #define INTL_VALUE "Wartość"
-
-#include "./airrohr-logo-common.h"

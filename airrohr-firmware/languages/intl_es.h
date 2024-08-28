@@ -14,7 +14,7 @@ const char INTL_CONFIGURATION[] PROGMEM = "Configuración";
 #define INTL_WIFI_SETTINGS "Configuración WiFi"
 #define INTL_WIFI_NETWORKS "Carga de redes wifi ..."
 #define INTL_LANGUAGE "Idioma"
-const char INTL_NO_NETWORKS[] PROGMEM =  "Red WiFi no detectada";
+const char INTL_NO_NETWORKS[] PROGMEM = "Red WiFi no detectada";
 const char INTL_NETWORKS_FOUND[] PROGMEM = "Redes encontradas: ";
 const char INTL_AB_HIER_NUR_ANDERN[] PROGMEM = "Configuración avanzada (solo si sabes que lo que estas haciendo)";
 const char INTL_SAVE[] PROGMEM = "Guardar";
@@ -38,7 +38,7 @@ const char INTL_BASICAUTH[] PROGMEM = "Autorización";
 
 const char INTL_FS_WIFI_DESCRIPTION[] PROGMEM = "Sensor iFi en modo de configuración";
 const char INTL_FS_WIFI_NAME[] PROGMEM = "Nombre";
-const char INTL_MORE_SETTINGS[] PROGMEM ="Otras configruaciones";
+const char INTL_MORE_SETTINGS[] PROGMEM = "Otras configruaciones";
 const char INTL_AUTO_UPDATE[] PROGMEM = "Actualización automática del Firmware";
 const char INTL_USE_BETA[] PROGMEM = "Cargar del firmware beta";
 const char INTL_DISPLAY[] PROGMEM = "OLED SSD1306";
@@ -111,5 +111,3 @@ const char INTL_SIGNAL_QUALITY[] PROGMEM = "Calidad de Señal";
 #define INTL_SENSOR "Sensor"
 #define INTL_PARAMETER "Parámetro"
 #define INTL_VALUE "Valor"
-
-#include "./airrohr-logo-common.h"
