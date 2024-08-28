@@ -1,6 +1,8 @@
 #ifndef EXT_DEF_H
 #define EXT_DEF_H
 
+#include "defines.h"
+
 // Import Secrets
 #include "secrets.h"
 

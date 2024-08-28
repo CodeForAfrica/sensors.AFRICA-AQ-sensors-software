@@ -10,6 +10,8 @@
 #ifndef NAMESPACE_CFG_H
 #define NAMESPACE_CFG_H
 
+#include "defines.h"
+#include "ext_def.h"
 namespace cfg
 {
     unsigned debug = DEBUG;
