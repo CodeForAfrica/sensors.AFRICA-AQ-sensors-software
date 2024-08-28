@@ -212,7 +212,7 @@ static void add_table_row_from_value(String &page_content, const __FlashStringHe
     page_content += s;
 }
 
-static void add_table_row_from_value(String &page_content, const __FlashStringHelper *param, const String &value, const char *unit = nullptr)
+static void add_table_row_from_value(String &page_content, const __FlashStringHelper *param, const String &value, const char *unit)
 {
     RESERVE_STRING(s, MED_STR);
     s = F("<tr><td>{p}</td><td class='r'>{v}&nbsp;{u}</td></tr>");

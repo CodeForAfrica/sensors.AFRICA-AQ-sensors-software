@@ -5,11 +5,6 @@
 #ifndef WEBSERVER_H
 #define WEBSERVER_H
 
-#include "languages/lang_def.h"
-#include "html_helper.h"
-#include "sensors-africa-logo.h"
-#include "../namespace_cfg.h"
-
 #if defined(ESP8266)
 #include <ESP8266WebServer.h>
 ESP8266WebServer server(80);
@@ -17,6 +12,11 @@ ESP8266WebServer server(80);
 #if defined(ESP32)
 WebServer server(80);
 #endif
+
+#include "languages/lang_def.h"
+#include "html_helper.h"
+#include "sensors-africa-logo.h"
+#include "../namespace_cfg.h"
 
 // Function declarations
 static void setup_webserver();
