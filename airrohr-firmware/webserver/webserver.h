@@ -10,6 +10,14 @@
 #include "sensors-africa-logo.h"
 #include "../namespace_cfg.h"
 
+#if defined(ESP8266)
+#include <ESP8266WebServer.h>
+ESP8266WebServer server(80);
+#endif
+#if defined(ESP32)
+WebServer server(80);
+#endif
+
 // Function declarations
 static void setup_webserver();
 static bool webserver_request_auth();
