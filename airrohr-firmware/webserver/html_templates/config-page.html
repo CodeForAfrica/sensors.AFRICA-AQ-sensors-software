@@ -1,0 +1,235 @@
+<!-----
+
+Rendered by webserver_config() 
+
+Steps for serving page via GET request:
+1. call start_html_page()
+2. Add result form WEB_CONFIG_SCRIPT if wificonfig_loop is set to true
+3. call webserver_config_send_body_get
+    -add checkbox
+    -add Form
+        - list available WiFi networks
+        - Add Table
+           - WLAN SSID form input
+           - WLAN password form input
+        - Advanced settings
+           - add form checkbox
+           - table
+              -username form input
+              -password form input
+
+        - Firmware version and OTA 
+            - OTA checkbox
+            - use beta firmware OTA checkbox
+        - Select language table
+
+        
+4. Call send_html_page();
+
+---->
+
+<!-- WEB_PAGE_HEADER -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>{t}</title>   <!--Title is INTL_CONFIGURATION which in English is "Configuration"-->
+
+    <!-- WEB_PAGE_HEADER_HEAD -->
+    <meta name="viewport" content="width=device-width" />
+    <style type="text/css">
+      body {
+        font-family: Arial;
+        margin: 0;
+      }
+
+      .content {
+        margin: 10px;
+      }
+
+      .r {
+        text-align: right;
+      }
+
+      td {
+        vertical-align: top;
+      }
+
+      a {
+        text-decoration: none;
+        padding: 10px;
+        background: #3ba;
+        color: white;
+        display: block;
+        width: auto;
+        border-radius: 5px;
+        box-shadow: 0px 2px 2px #3ba;
+      }
+
+      .wifi {
+        background: none;
+        color: blue;
+        padding: 5px;
+        display: inline;
+      }
+
+      input[type="text"] {
+        width: 100%;
+      }
+
+      input[type="password"] {
+        width: 100%;
+      }
+
+      input[type="submit"] {
+        color: white;
+        text-align: left;
+        border-radius: 5px;
+        font-size: medium;
+        background: #b33;
+        box-shadow: 0px 2px 2px #b33;
+        padding: 9px !important;
+        width: 100%;
+        border-style: none;
+      }
+
+      input[type="submit"]:hover {
+        background: #d44;
+      }
+
+      .s_green {
+        padding: 9px !important;
+        width: 100%;
+        border-style: none;
+        background: #3ba;
+        color: white;
+        text-align: left;
+      }
+    </style>
+  </head>
+
+  <!-- WEB_CONFIG_SCRIPT -->
+
+  <script>
+    function setSSID(ssid) {
+      document.getElementById("wlanssid").value =
+        ssid.innerText || ssid.textContent;
+      document.getElementById("wlanpwd").focus();
+    }
+    function load_wifi_list() {
+      var x = new XMLHttpRequest();
+      x.open("GET", "/wifi");
+      x.onload = function () {
+        if (x.status === 200) {
+          document.getElementById("wifilist").innerHTML = x.responseText;
+        }
+      };
+      x.send();
+    }
+   </script>
+  
+  <!-- webserver_config_send_body_get -->
+  <form method='POST' action='/config' style='width:100%;'>
+    <b>" INTL_WIFI_SETTINGS "</b><br/> <!--this equals "WiFi Settings" in English buid -->
+    
+    <!-- If wificonfig_loop is true -->
+    <div id='wifilist'>" INTL_WIFI_NETWORKS "</div><br/> <!--Equals "Loading wifi networks ..."-->
+    <table>
+        <!-- add form input -->
+        <tr> 
+            <!-- Set WLAN SSID -->
+            <td title='[&lt;= {l}]'>{i}:&nbsp;</td>
+            <td style='width:{l}em'>
+            <input type='{t}' name='{n}' id='{n}' placeholder='{i}' value='{v}' maxlength='{l}'/>
+            </td></tr>
+            <!-- Set WLAN password -->
+            <td title='[&lt;= {l}]'>{i}:&nbsp;</td>
+            <td style='width:{l}em'>
+            <input type='{t}' name='{n}' id='{n}' placeholder='{i}' value='{v}' maxlength='{l}'/>
+            </td></tr>
+        </table>
+
+        <hr/><br/><b>
+        <!-- INTL_AB_HIER_NUR_ANDERN -->
+        Advanced settings (оnly if you know what you are doing)
+       </b><br/>
+       <br/>
+       <!-- Advanced settings checkbox -->
+       <label for='{n}'>
+        <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+        <input type='hidden' name='{n}' value='0'/>
+        {i}
+       </label><br/>
+            <table>
+            <!-- username  -->
+            <tr>
+                <td title='[&lt;= {l}]'>{i}:&nbsp;</td>
+                <td style='width:{l}em'>
+                <input type='{t}' name='{n}' id='{n}' placeholder='{i}' value='{v}' maxlength='{l}'/>
+                </td></tr>
+
+            <!-- password  -->
+            <tr>
+                <td title='[&lt;= {l}]'>{i}:&nbsp;</td>
+                <td style='width:{l}em'>
+                <input type='{t}' name='{n}' id='{n}' placeholder='{i}' value='{v}' maxlength='{l}'/>
+                </td></tr>
+
+            </table>
+            <br/>
+
+            <!-- Firmware OTA -->
+            <br/><b>INTL_FIRMWARE</b>&nbsp; <!--Fimware version-->
+                <!-- OTA update checkbox -->
+                <label for='{n}'>
+                    <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+                    <input type='hidden' name='{n}' value='0'/>
+                    {i}</label><br/>
+
+                <!-- Use Beta firmware OTA update checkbox -->
+                <label for='{n}'>
+                    <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+                    <input type='hidden' name='{n}' value='0'/>
+                    {i}</label><br/>
+
+
+
+                    <!-- Select language via form_select_lang() -->
+                     <table>
+                        <tr>
+                            <td> INTL_LANGUAGE :&nbsp;</td>
+                            <td>
+                            <select id='current_lang' name='current_lang'> <!-- Replaced with appropriate data -->
+                            <option value='BG'>Bulgarian (BG)</option>
+                            <option value='CZ'>Český (CZ)</option>
+                            <option value='DE'>Deutsch (DE)</option>
+                            <option value='DK'>Dansk (DK)</option>
+                            <option value='EN'>English (EN)</option>
+                            <option value='ES'>Español (ES)</option>
+                            <option value='FR'>Français (FR)</option>
+                            <option value='IT'>Italiano (IT)</option>
+                            <option value='LU'>Lëtzebuergesch (LU)</option>
+                            <option value='NL'>Nederlands (NL)</option>
+                            <option value='PL'>Polski (PL)</option>
+                            <option value='PT'>Português (PT)</option>
+                            <option value='RS'>Srpski (RS)</option>
+                            <option value='RU'>Русский (RU)</option>
+                            <option value='SE'>Svenska (SE)</option>
+                            <option value='TR'>Türkçe (TR)</option>
+                            <option value='UA'>український (UA)</option>
+                            </select>
+                            </td>
+                            </tr>
+                     </table>
+
+
+                <!-- Another script -->
+                <script>
+                    var $ = function(e) { return document.getElementById(e); };
+                    function updateOTAOptions() { 
+                    $('current_lang').disabled = $('use_beta').disabled = !$('auto_update').checked; 
+                    }; updateOTAOptions(); $('auto_update').onchange = updateOTAOptions;
+                </script>
+
+      <!-- Too tired we fight another day 😫😫😫 -->
+
+</html>
