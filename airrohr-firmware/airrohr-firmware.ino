@@ -349,6 +349,7 @@ unsigned long WiFi_error_count;
 unsigned long last_page_load = millis();
 
 bool wificonfig_loop = false;
+
 uint8_t sntp_time_set;
 
 unsigned long count_sends = 0;
@@ -388,6 +389,7 @@ const char JSON_SENSOR_DATA_VALUES[] PROGMEM = "sensordatavalues";
 #include "ca-root.h"
 #include "displays/displays.h"
 #include "utils/wifi_config.h"
+#include "utils/_network_time.h"
 
 /*****************************************************************
  * display values                                                *
@@ -3053,27 +3055,6 @@ static void logEnabledDisplays()
 	{
 		debug_outln_info(F("Show on LCD 2004 ..."));
 	}
-}
-
-static void setupNetworkTime()
-{
-	// server name ptrs must be persisted after the call to configTime because internally
-	// the pointers are stored see implementation of lwip sntp_setservername()
-	static char ntpServer1[18], ntpServer2[18], ntpServer3[18];
-#if defined(ESP8266)
-	settimeofday_cb([]()
-					{
-		if (!sntp_time_set) {
-			time_t now = time(nullptr);
-			debug_outln_info(F("SNTP synced: "), ctime(&now));
-			// twoStageOTAUpdate();
-			// last_update_attempt = millis();
-		}
-		sntp_time_set++; });
-#endif
-	strcpy_P(ntpServer1, NTP_SERVER_1);
-	strcpy_P(ntpServer2, NTP_SERVER_2);
-	configTime(0, 0, ntpServer1, ntpServer2, ntpServer3);
 }
 
 static unsigned long sendDataToOptionalApis(const String &data)
