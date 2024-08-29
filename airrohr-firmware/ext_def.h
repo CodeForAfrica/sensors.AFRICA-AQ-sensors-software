@@ -1,8 +1,19 @@
 #ifndef EXT_DEF_H
 #define EXT_DEF_H
 
+#if defined(ESP8266)
+#include <ESP8266WiFi.h> // !! Needed for for BEARSSL to work
+#endif
+
+#if defined(ESP32)
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <WiFiClientSecure.h>
+#endif
+
 #include "defines.h"
 #include "languages/lang_def.h"
+
 // Import Secrets
 #include "secrets.h"
 
