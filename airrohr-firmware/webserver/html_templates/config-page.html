@@ -115,8 +115,17 @@ Steps for serving page via GET request:
       }
     </style>
   </head>
+  <body>
+  <div style='min-height:129px;background-color:#3ba;margin-bottom:20px;box-shadow:0px 4px 6px #3ba'>
+<a href='/' style='background:none;display:inline'><img src='/images?name=luftdaten_logo' style='float:left;margin:20px' width='100' height='89'/></a>
 
-  <!-- WEB_CONFIG_SCRIPT -->
+<!-- WB_PAGE_HEADER_BODY -->
+<h3 style='margin:0'> INTL_PM_SENSOR </h3>
+<small>ID: {id}<br/>MAC: {mac}<br/> INTL_FIRMWARE :  SOFTWARE_VERSION_STR <br/>( __DATE__   __TIME__ )<br/>
+<a href='https://github.com/opendata-stuttgart/sensors-software/labels/bug' target='_blank' rel='noreferrer'>Report an issue</a>
+</small></div><div class='content'><h4> INTL_HOME  {n} {t}</h4>
+
+ <!-- WEB_CONFIG_SCRIPT -->
 
   <script>
     function setSSID(ssid) {
