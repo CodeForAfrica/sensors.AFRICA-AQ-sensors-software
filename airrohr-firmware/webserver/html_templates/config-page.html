@@ -23,6 +23,15 @@ Steps for serving page via GET request:
             - use beta firmware OTA checkbox
         - Select language table
 
+        - Debug settings
+
+        - More Settings
+            - Display settings
+            - Sensor settings
+            - GSM settings 
+            - API settingd
+      - Submit button
+
         
 4. Call send_html_page();
 
@@ -227,9 +236,408 @@ Steps for serving page via GET request:
                     var $ = function(e) { return document.getElementById(e); };
                     function updateOTAOptions() { 
                     $('current_lang').disabled = $('use_beta').disabled = !$('auto_update').checked; 
-                    }; updateOTAOptions(); $('auto_update').onchange = updateOTAOptions;
+                    }; 
+                    updateOTAOptions(); 
+                    $('auto_update').onchange = updateOTAOptions;
                 </script>
 
-      <!-- Too tired we fight another day 😫😫😫 -->
 
+    <!-- DEBUG settings -->
+      <table>
+        <!-- Debug level -->
+        <tr>
+            <td title='[&lt;= {l}]'>{i}:&nbsp;</td>
+            <td style='width:{l}em'>
+            <input type='{t}' name='{n}' id='{n}' placeholder='{i}' value='{v}' maxlength='{l}'/>
+            </td></tr>
+        <!-- Measuring interval (sec) -->
+        <tr>
+            <td title='[&lt;= {l}]'>{i}:&nbsp;</td>
+            <td style='width:{l}em'>
+            <input type='{t}' name='{n}' id='{n}' placeholder='{i}' value='{v}' maxlength='{l}'/>
+            </td></tr>
+        <!-- Duration router mode -->
+        <tr>
+            <td title='[&lt;= {l}]'>{i}:&nbsp;</td>
+            <td style='width:{l}em'>
+            <input type='{t}' name='{n}' id='{n}' placeholder='{i}' value='{v}' maxlength='{l}'/>
+            </td></tr>
+
+      </table>
+     
+    <!-- More settings -->
+      <br/><b> More settings </b><br/>
+     
+       <!--- DISPLAYS -->
+        <!-- OLED SSD1306 checkbox -->
+        <label for='{n}'>
+            <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+            <input type='hidden' name='{n}' value='0'/>
+            {i}
+        </label><br/>
+        <!-- OLED SH1106 checkbox -->
+        <label for='{n}'>
+            <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+            <input type='hidden' name='{n}' value='0'/>
+            {i}
+        </label><br/>
+        <!-- OLED display flip checkbox -->
+        <label for='{n}'>
+            <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+            <input type='hidden' name='{n}' value='0'/>
+            {i}
+        </label><br/>
+        <!-- LCD 1602 (I2C: 0x27) checkbox -->
+        <label for='{n}'>
+            <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+            <input type='hidden' name='{n}' value='0'/>
+            {i}
+        </label><br/>
+        <!-- LCD 1602 (I2C: 0x3F) checkbox -->
+        <label for='{n}'>
+            <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+            <input type='hidden' name='{n}' value='0'/>
+            {i}
+        </label><br/>
+        <!-- LCD 2004 (I2C: 0x27) checkbox -->
+        <label for='{n}'>
+            <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+            <input type='hidden' name='{n}' value='0'/>
+            {i}
+        </label><br/>
+        <!-- LCD 2004 (I2C: 0x3F) checkbox -->
+        <label for='{n}'>
+            <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+            <input type='hidden' name='{n}' value='0'/>
+            {i}
+        </label><br/>
+        <!-- Display Wifi info checkbox -->
+        <label for='{n}'>
+            <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+            <input type='hidden' name='{n}' value='0'/>
+            {i}
+        </label><br/>
+        <!-- Display device info checkbox -->
+        <label for='{n}'>
+            <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+            <input type='hidden' name='{n}' value='0'/>
+            {i}
+        </label><br/>
+
+       <!-- Sensor settings -->
+       <br/><b> Sensors </b><br/>
+         <!-- SDS011 ({pm}) checkbox -->
+         <label for='{n}'>
+            <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+            <input type='hidden' name='{n}' value='0'/>
+            {i}
+        </label><br/>
+         <!-- Honeywell PM ({pm}) checkbox -->
+         <label for='{n}'>
+            <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+            <input type='hidden' name='{n}' value='0'/>
+            {i}
+        </label><br/>
+         <!-- Sensirion SPS30 ({pm}) checkbox -->
+         <label for='{n}'>
+            <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+            <input type='hidden' name='{n}' value='0'/>
+            {i}
+        </label><br/>
+         <!-- DHT22 ({t}, {h}) checkbox -->
+         <label for='{n}'>
+            <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+            <input type='hidden' name='{n}' value='0'/>
+            {i}
+        </label><br/>
+         <!-- HTU21D ({t}, {h}) checkbox -->
+         <label for='{n}'>
+            <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+            <input type='hidden' name='{n}' value='0'/>
+            {i}
+        </label><br/>
+         <!-- BMP280/BME280 ({t}, {h}, {p}) checkbox -->
+         <label for='{n}'>
+            <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+            <input type='hidden' name='{n}' value='0'/>
+            {i}
+        </label><br/>
+         <!-- SHT3X ({t}, {h}) checkbox -->
+         <label for='{n}'>
+            <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+            <input type='hidden' name='{n}' value='0'/>
+            {i}
+        </label><br/>
+         <!-- DS18B20 ({t}) checkbox -->
+         <label for='{n}'>
+            <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+            <input type='hidden' name='{n}' value='0'/>
+            {i}
+        </label><br/>
+         <!-- DNMS ({l_a} checkbox -->
+         <label for='{n}'>
+            <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+            <input type='hidden' name='{n}' value='0'/>
+            {i}
+        </label><br/> 
+        <!-- DNMS correction -->
+       <table>
+        <tr>
+            <td title='[&lt;= {l}]'>{i}:&nbsp;</td>
+            <td style='width:{l}em'>
+            <input type='{t}' name='{n}' id='{n}' placeholder='{i}' value='{v}' maxlength='{l}'/>
+            </td></tr>
+        </table>
+
+        <!-- More sensors -->
+        <br/><b> More Sensors </b><br/>
+         <!-- Plantower PMS(1,3,5,6,7)003 ({pm}) checkbox -->
+         <label for='{n}'>
+            <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+            <input type='hidden' name='{n}' value='0'/>
+            {i}
+        </label><br/>
+         <!-- BMP180 ({t}, {p}) checkbox -->
+         <label for='{n}'>
+            <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+            <input type='hidden' name='{n}' value='0'/>
+            {i}
+        </label><br/>
+         <!-- GPS (NEO 6M) checkbox -->
+         <label for='{n}'>
+            <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+            <input type='hidden' name='{n}' value='0'/>
+            {i}
+        </label><br/>
+         <!--  checkbox -->
+    
+
+    <!-- GSM settings-->
+    <br/><b> GSM </b><br/>
+        <!-- GSM capable checkbox -->
+        <label for='{n}'>
+            <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+            <input type='hidden' name='{n}' value='0'/>
+            {i}
+        </label><br/>
+         
+        <table>
+            <!-- GSM PIN -->
+            <tr>
+                <td title='[&lt;= {l}]'>{i}:&nbsp;</td>
+                <td style='width:{l}em'>
+                <input type='{t}' name='{n}' id='{n}' placeholder='{i}' value='{v}' maxlength='{l}'/>
+                </td></tr>
+            <!-- GSM APN-->
+            <tr>
+                <td title='[&lt;= {l}]'>{i}:&nbsp;</td>
+                <td style='width:{l}em'>
+                <input type='{t}' name='{n}' id='{n}' placeholder='{i}' value='{v}' maxlength='{l}'/>
+                </td></tr>
+            <!-- GPRS username -->
+            <tr>
+                <td title='[&lt;= {l}]'>{i}:&nbsp;</td>
+                <td style='width:{l}em'>
+                <input type='{t}' name='{n}' id='{n}' placeholder='{i}' value='{v}' maxlength='{l}'/>
+                </td></tr>
+            <!-- GSM password -->
+            <tr>
+                <td title='[&lt;= {l}]'>{i}:&nbsp;</td>
+                <td style='width:{l}em'>
+                <input type='{t}' name='{n}' id='{n}' placeholder='{i}' value='{v}' maxlength='{l}'/>
+                </td></tr>
+        </table>
+         <br/>
+
+        <!-- API settings -->
+        <br/><b> APIs </b><br/>
+       
+            <!-- API Sensor.Community checkbox -->
+            <label for='{n}'>
+                <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+                <input type='hidden' name='{n}' value='0'/>
+                {i}
+            </label><br/>
+            &nbsp;&nbsp;( 
+                <!-- WEB HTTPS chckbox -->
+                <label for='{n}'>
+                    <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+                    <input type='hidden' name='{n}' value='0'/>
+                    {i}
+                </label><br/>
+                )<br/>
+
+            <!-- API Madavi.de checkbox -->
+            <label for='{n}'>
+                <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+                <input type='hidden' name='{n}' value='0'/>
+                {i}
+            </label><br/>
+            &nbsp;&nbsp;( 
+                <!-- WEB HTTPS chckbox -->
+                <label for='{n}'>
+                    <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+                    <input type='hidden' name='{n}' value='0'/>
+                    {i}
+                </label><br/>
+                )<br/>
+
+            
+            <!--Send to CSV checkbox -->
+            <label for='{n}'>
+                <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+                <input type='hidden' name='{n}' value='0'/>
+                {i}
+            </label><br/>
+            <!--Send to Feinstaub-App checkbox -->
+            <label for='{n}'>
+                <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+                <input type='hidden' name='{n}' value='0'/>
+                {i}
+            </label><br/>
+            <!--Send to aircms.online checkbox -->
+            <label for='{n}'>
+                <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+                <input type='hidden' name='{n}' value='0'/>
+                {i}
+            </label><br/>
+            <!--Send to OpenSenseMap checkbox -->
+            <label for='{n}'>
+                <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+                <input type='hidden' name='{n}' value='0'/>
+                {i}
+            </label><br/>
+            
+             <!-- senseBox&nbsp;ID -->
+            <table>
+                <tr>
+                    <td title='[&lt;= {l}]'>{i}:&nbsp;</td>
+                    <td style='width:{l}em'>
+                    <input type='{t}' name='{n}' id='{n}' placeholder='{i}' value='{v}' maxlength='{l}'/>
+                    </td></tr>
+                </table>
+
+            <br/>
+
+
+             <!-- Send data to custom API checkbox -->
+             <label for='{n}'>
+                <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+                <input type='hidden' name='{n}' value='0'/>
+                {i}
+            </label><br/>
+            &nbsp;&nbsp;( 
+                <!-- WEB HTTPS chckbox -->
+                <label for='{n}'>
+                    <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+                    <input type='hidden' name='{n}' value='0'/>
+                    {i}
+                </label><br/>
+                )<br/>
+       
+                <table>
+                    <!-- Custom API Server -->
+                    <tr>
+                        <td title='[&lt;= {l}]'>{i}:&nbsp;</td>
+                        <td style='width:{l}em'>
+                        <input type='{t}' name='{n}' id='{n}' placeholder='{i}' value='{v}' maxlength='{l}'/>
+                        </td></tr>
+                    <!-- Custom API Path-->
+                    <tr>
+                        <td title='[&lt;= {l}]'>{i}:&nbsp;</td>
+                        <td style='width:{l}em'>
+                        <input type='{t}' name='{n}' id='{n}' placeholder='{i}' value='{v}' maxlength='{l}'/>
+                        </td></tr>
+                    <!-- Custom API Port -->
+                    <tr>
+                        <td title='[&lt;= {l}]'>{i}:&nbsp;</td>
+                        <td style='width:{l}em'>
+                        <input type='{t}' name='{n}' id='{n}' placeholder='{i}' value='{v}' maxlength='{l}'/>
+                        </td></tr>
+                    <!-- Custom API User -->
+                    <tr>
+                        <td title='[&lt;= {l}]'>{i}:&nbsp;</td>
+                        <td style='width:{l}em'>
+                        <input type='{t}' name='{n}' id='{n}' placeholder='{i}' value='{v}' maxlength='{l}'/>
+                        </td></tr>
+                    <!-- Custom API Password -->
+                    <tr>
+                        <td title='[&lt;= {l}]'>{i}:&nbsp;</td>
+                        <td style='width:{l}em'>
+                        <input type='{t}' name='{n}' id='{n}' placeholder='{i}' value='{v}' maxlength='{l}'/>
+                        </td></tr>
+                </table>
+
+                <br/>
+
+
+                <!-- Send data to InfluxDB checkbox -->
+             <label for='{n}'>
+                <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+                <input type='hidden' name='{n}' value='0'/>
+                {i}
+            </label><br/>
+            &nbsp;&nbsp;( 
+                <!-- WEB HTTPS chckbox -->
+                <label for='{n}'>
+                    <input type='checkbox' name='{n}' value='1' id='{n}' {c}/>
+                    <input type='hidden' name='{n}' value='0'/>
+                    {i}
+                </label><br/>
+                )<br/>
+       
+                <table>
+                    <!-- Influx Server -->
+                    <tr>
+                        <td title='[&lt;= {l}]'>{i}:&nbsp;</td>
+                        <td style='width:{l}em'>
+                        <input type='{t}' name='{n}' id='{n}' placeholder='{i}' value='{v}' maxlength='{l}'/>
+                        </td></tr>
+                    <!-- Influx Path-->
+                    <tr>
+                        <td title='[&lt;= {l}]'>{i}:&nbsp;</td>
+                        <td style='width:{l}em'>
+                        <input type='{t}' name='{n}' id='{n}' placeholder='{i}' value='{v}' maxlength='{l}'/>
+                        </td></tr>
+                    <!-- Influx Port -->
+                    <tr>
+                        <td title='[&lt;= {l}]'>{i}:&nbsp;</td>
+                        <td style='width:{l}em'>
+                        <input type='{t}' name='{n}' id='{n}' placeholder='{i}' value='{v}' maxlength='{l}'/>
+                        </td></tr>
+                    <!-- Influx User -->
+                    <tr>
+                        <td title='[&lt;= {l}]'>{i}:&nbsp;</td>
+                        <td style='width:{l}em'>
+                        <input type='{t}' name='{n}' id='{n}' placeholder='{i}' value='{v}' maxlength='{l}'/>
+                        </td></tr>
+                    <!-- Influx Password -->
+                    <tr>
+                        <td title='[&lt;= {l}]'>{i}:&nbsp;</td>
+                        <td style='width:{l}em'>
+                        <input type='{t}' name='{n}' id='{n}' placeholder='{i}' value='{v}' maxlength='{l}'/>
+                        </td></tr>
+                </table>
+
+           <!-- Form Submit Button -->
+                <tr>
+                    <td>&nbsp;</td>
+                    <td>
+                    <input type='submit' name='submit' value='{v}' /> <!--Save configuration and restart-->
+                    </td>
+                    </tr>
+            
+                    <br/>
+                    <br/>
+
+  </form>
+
+
+  <!-- If wificonfig_loog equals true -->
+  <script>window.setTimeout(load_wifi_list,1000);</script>
+
+  <!-- Back to horm button -->
+  <br/><br/><a href='/' style='display:inline;'> INTL_BACK_TO_HOME </a>
+                                       <br/><br/><br/>
+                                       </div></body></html>
 </html>

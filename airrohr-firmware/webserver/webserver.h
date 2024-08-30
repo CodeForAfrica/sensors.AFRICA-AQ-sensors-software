@@ -291,7 +291,7 @@ static void webserver_config_send_body_get(String &page_content)
     add_form_checkbox(Config_send2sensemap, tmpl(FPSTR(INTL_SEND_TO), F("OpenSenseMap")));
     page_content += FPSTR(TABLE_TAG_OPEN);
     add_form_input(page_content, Config_senseboxid, F("senseBox&nbsp;ID"), LEN_SENSEBOXID - 1);
-
+    // ? A table close tag seems to be missing here
     server.sendContent(page_content);
     page_content += FPSTR(BR_TAG);
     page_content += form_checkbox(Config_send2custom, FPSTR(INTL_SEND_TO_OWN_API), false);
