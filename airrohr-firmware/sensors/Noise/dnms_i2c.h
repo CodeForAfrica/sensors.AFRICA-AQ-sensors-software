@@ -24,38 +24,36 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>. *
  *                                                                      *
  ************************************************************************
-*/
+ */
 
 #include <Arduino.h>
 #include <Wire.h>
 /*
- * 
+ *
  * Attention: in Wire.h set BUFFER_LENGTH to 64 !!
  *
  * #define BUFFER_LENGTH 64
- * 
+ *
  */
 
+#define DNMS_I2C_ADDRESS 0x55
+#define DNMS_MAX_VERSION_LEN 18
+#define DNMS_WORD_SIZE 2
+#define DNMS_NUM_WORDS(x) (sizeof(x) / DNMS_WORD_SIZE)
+#define STATUS_OK 0
+#define STATUS_FAIL (-1)
+#define DNMS_COMMAND_SIZE 2
+#define CRC8_POLYNOMIAL 0x31
+#define CRC8_INIT 0xFF
+#define CRC8_LEN 1
+#define DNMS_MAX_BUFFER_WORDS 32
+#define DNMS_IS_ERR_STATE(err_code) (((err_code) | 0xff) == 0x1ff)
 
-#define DNMS_I2C_ADDRESS                0x55
-#define DNMS_MAX_VERSION_LEN            18
-#define DNMS_WORD_SIZE                  2
-#define DNMS_NUM_WORDS(x)               (sizeof(x) / DNMS_WORD_SIZE)
-#define STATUS_OK                       0
-#define STATUS_FAIL                     (-1)
-#define DNMS_COMMAND_SIZE               2
-#define CRC8_POLYNOMIAL                 0x31
-#define CRC8_INIT                       0xFF
-#define CRC8_LEN                        1
-#define DNMS_MAX_BUFFER_WORDS           32
-#define DNMS_IS_ERR_STATE(err_code)     (((err_code) | 0xff) == 0x1ff)
-
-#define DNMS_CMD_RESET                  0x0001
-#define DNMS_CMD_READ_VERSION           0x0002
-#define DNMS_CMD_CALCULATE_LEQ          0x0003
-#define DNMS_CMD_READ_DATA_READY        0x0004
-#define DNMS_CMD_READ_LEQ               0x0005
-
+#define DNMS_CMD_RESET 0x0001
+#define DNMS_CMD_READ_VERSION 0x0002
+#define DNMS_CMD_CALCULATE_LEQ 0x0003
+#define DNMS_CMD_READ_DATA_READY 0x0004
+#define DNMS_CMD_READ_LEQ 0x0005
 
 #define be16_to_cpu(s) (((uint16_t)(s) << 8) | (0xff & ((uint16_t)(s)) >> 8))
 #define be32_to_cpu(s) (((uint32_t)be16_to_cpu(s) << 16) | \
@@ -68,26 +66,25 @@
    @a:  word array to change (must be (uint16_t *) castable)
    @w:  number of word-sized elements in the array (DNMS_NUM_WORDS(a)).
 */
-#define DNMS_WORDS_TO_BYTES(a, w) \
-  for (uint16_t *__a = (uint16_t *)(a), __e = (w), __w = 0; __w < __e; ++__w) { \
-    __a[__w] = be16_to_cpu(__a[__w]); \
+#define DNMS_WORDS_TO_BYTES(a, w)                                             \
+  for (uint16_t *__a = (uint16_t *)(a), __e = (w), __w = 0; __w < __e; ++__w) \
+  {                                                                           \
+    __a[__w] = be16_to_cpu(__a[__w]);                                         \
   }
 
-
-struct dnms_measurements {
+struct dnms_measurements
+{
   float leq_a;
   float leq_a_min;
   float leq_a_max;
 };
 
-
 /**
    dnms_reset() - reset the dnms system
-   
+
    Return:  0 on success, an error code otherwise
 */
 int16_t dnms_reset();
-
 
 /**
    dnms_get_version() - retrieve the version of the dnms
@@ -100,32 +97,21 @@ int16_t dnms_reset();
 */
 int16_t dnms_read_version(char *dnms_version);
 
-
-
 int16_t dnms_calculate_leq();
-
-
 
 int16_t dnms_read_data_ready(uint16_t *data_ready);
 
-
-
 int16_t dnms_read_leq(struct dnms_measurements *leq);
-
-
-
-
-
 
 int16_t dnms_i2c_read_cmd(uint8_t address, uint16_t cmd, uint16_t *data_words, uint16_t num_words);
 
-//int16_t dnms_i2c_delayed_read_cmd(uint8_t address, uint16_t cmd, uint32_t delay_us, uint16_t *data_words, uint16_t num_words);
+// int16_t dnms_i2c_delayed_read_cmd(uint8_t address, uint16_t cmd, uint32_t delay_us, uint16_t *data_words, uint16_t num_words);
 
-int8_t dnms_i2c_read(uint8_t address, uint8_t* data, uint16_t count);
+int8_t dnms_i2c_read(uint8_t address, uint8_t *data, uint16_t count);
 
-int8_t dnms_i2c_write(uint8_t address, const uint8_t* data, uint16_t count);
+int8_t dnms_i2c_write(uint8_t address, const uint8_t *data, uint16_t count);
 
-//void dnms_sleep_usec(uint32_t useconds);
+// void dnms_sleep_usec(uint32_t useconds);
 
 uint8_t dnms_common_generate_crc(uint8_t *data, uint16_t count);
 

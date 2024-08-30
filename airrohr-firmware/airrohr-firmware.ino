@@ -100,7 +100,6 @@ String SOFTWARE_VERSION(SOFTWARE_VERSION_STR);
 #include <TinyGPS++.h>
 #include "./bmx280_i2c.h"
 #include "./sps30_i2c.h"
-#include "./dnms_i2c.h"
 #include <Adafruit_FONA.h>
 
 // display funtion declarations
@@ -112,7 +111,8 @@ static void writeConfig();
 static String delayToString(unsigned time_ms);
 static void sensor_restart();
 static String SDS_version_date();
-
+static void add_Value2Json(String &res, const __FlashStringHelper *type, const String &value);
+static void add_Value2Json(String &res, const __FlashStringHelper *type, const __FlashStringHelper *debug_type, const float &value);
 /******************************************************************
  * Constants                                                      *
  ******************************************************************/
@@ -161,13 +161,6 @@ bool airrohr_selftest_failed = false;
 #include "./airrohr-cfg.h"
 
 /*****************************************************************
- * Variables for Noise Measurement DNMS                          *
- *****************************************************************/
-float last_value_dnms_laeq = -1.0;
-float last_value_dnms_la_min = -1.0;
-float last_value_dnms_la_max = -1.0;
-
-/*****************************************************************
  * SDS011 declarations                                           *
  *****************************************************************/
 #if defined(ESP8266)
@@ -178,6 +171,13 @@ SoftwareSerial *serialGPS;
 #define serialSDS (Serial1)
 #define serialGPS (&(Serial2))
 #endif
+
+/*****************************************************************
+ * Variables for Noise Measurement DNMS                          *
+ *****************************************************************/
+float last_value_dnms_laeq = -1.0;
+float last_value_dnms_la_min = -1.0;
+float last_value_dnms_la_max = -1.0;
 
 /*****************************************************************
  * DHT declaration                                               *
@@ -383,7 +383,9 @@ constexpr std::size_t array_num_elements(const T (&)[N])
 const char data_first_part[] PROGMEM = "{\"software_version\": \"" SOFTWARE_VERSION_STR "\", \"sensordatavalues\":[";
 const char JSON_SENSOR_DATA_VALUES[] PROGMEM = "sensordatavalues";
 
-// Refactored / to be refactored files
+/****************************************
+ * Refactored / to be refactored files
+ ****************************************/
 #include "ext_def.h"
 #include "utils/_debug_helper.h"
 #include "webserver/webserver.h"
@@ -392,6 +394,8 @@ const char JSON_SENSOR_DATA_VALUES[] PROGMEM = "sensordatavalues";
 #include "utils/wifi_config.h"
 #include "utils/_network_time.h"
 #include "OTA.h"
+// Sensors
+#include "./sensors/Noise/DNMS.h"
 
 /*****************************************************************
  * display values                                                *
@@ -2074,79 +2078,6 @@ static void fetchSensorSPS30(String &s)
 }
 
 /*****************************************************************
-   read DNMS values
- *****************************************************************/
-
-static float readDNMScorrection()
-{
-	char *pEnd = nullptr;
-	// Avoiding atof() here as this adds a lot (~ 9kb) of code size
-	float r = float(strtol(cfg::dnms_correction, &pEnd, 10));
-	if (pEnd && pEnd[0] == '.' && pEnd[1] >= '0' && pEnd[1] <= '9')
-	{
-		r += (r >= 0 ? 1.0 : -1.0) * ((pEnd[1] - '0') / 10.0);
-	}
-	return r;
-}
-
-static void fetchSensorDNMS(String &s)
-{
-	static bool dnms_error = false;
-	debug_outln_verbose(FPSTR(DBG_TXT_START_READING), FPSTR(SENSORS_DNMS));
-	last_value_dnms_laeq = -1.0;
-	last_value_dnms_la_min = -1.0;
-	last_value_dnms_la_max = -1.0;
-
-	if (dnms_calculate_leq() != 0)
-	{
-		// error
-		dnms_error = true;
-	}
-	uint16_t data_ready = 0;
-	dnms_error = true;
-	for (unsigned i = 0; i < 20; i++)
-	{
-		delay(2);
-		int16_t ret_dnms = dnms_read_data_ready(&data_ready);
-		if ((ret_dnms == 0) && (data_ready != 0))
-		{
-			dnms_error = false;
-			break;
-		}
-	}
-	if (!dnms_error)
-	{
-		struct dnms_measurements dnms_values;
-		if (dnms_read_leq(&dnms_values) == 0)
-		{
-			float dnms_corr_value = readDNMScorrection();
-			last_value_dnms_laeq = dnms_values.leq_a + dnms_corr_value;
-			last_value_dnms_la_min = dnms_values.leq_a_min + dnms_corr_value;
-			last_value_dnms_la_max = dnms_values.leq_a_max + dnms_corr_value;
-		}
-		else
-		{
-			// error
-			dnms_error = true;
-		}
-	}
-	if (dnms_error)
-	{
-		// es gab einen Fehler
-		dnms_reset(); // try to reset dnms
-		debug_outln_error(F("DNMS read failed"));
-	}
-	else
-	{
-		add_Value2Json(s, F("DNMS_noise_LAeq"), F("LAeq: "), last_value_dnms_laeq);
-		add_Value2Json(s, F("DNMS_noise_LA_min"), F("LA_MIN: "), last_value_dnms_la_min);
-		add_Value2Json(s, F("DNMS_noise_LA_max"), F("LA_MAX: "), last_value_dnms_la_max);
-	}
-	debug_outln_info(FPSTR(DBG_TXT_SEP));
-	debug_outln_verbose(FPSTR(DBG_TXT_END_READING), FPSTR(SENSORS_DNMS));
-}
-
-/*****************************************************************
  * read GPS sensor values                                        *
  *****************************************************************/
 static void fetchSensorGPS(String &s)
@@ -2654,29 +2585,6 @@ static void initSPS30()
 		debug_outln_error(F("SPS30 error starting measurement"));
 		sps30_init_failed = true;
 		return;
-	}
-}
-
-/*****************************************************************
-   Init DNMS - Digital Noise Measurement Sensor
- *****************************************************************/
-static void initDNMS()
-{
-	char dnms_version[DNMS_MAX_VERSION_LEN + 1];
-
-	debug_out(F("Trying DNMS sensor on 0x55H "), DEBUG_MIN_INFO);
-	dnms_reset();
-	delay(1000);
-	if (dnms_read_version(dnms_version) != 0)
-	{
-		debug_outln_info(FPSTR(DBG_TXT_NOT_FOUND));
-		debug_outln_error(F("Check DNMS wiring"));
-		dnms_init_failed = true;
-	}
-	else
-	{
-		dnms_version[DNMS_MAX_VERSION_LEN] = 0;
-		debug_outln_info(FPSTR(DBG_TXT_FOUND), String(": ") + String(dnms_version));
 	}
 }
 
