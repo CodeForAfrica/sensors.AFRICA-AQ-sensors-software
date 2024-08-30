@@ -90,7 +90,6 @@ String SOFTWARE_VERSION(SOFTWARE_VERSION_STR);
 // includes common to ESP8266 and ESP32 (especially external libraries)
 #include <ArduinoJson.h>
 #include <DNSServer.h>
-#include "./DHT.h"
 #include <SPI.h>
 #include <Adafruit_HTU21DF.h>
 #include <Adafruit_BMP085.h>
@@ -113,6 +112,9 @@ static void sensor_restart();
 static String SDS_version_date();
 static void add_Value2Json(String &res, const __FlashStringHelper *type, const String &value);
 static void add_Value2Json(String &res, const __FlashStringHelper *type, const __FlashStringHelper *debug_type, const float &value);
+void switch_status_LEDs_on(uint8_t LED, bool on_state);
+void switch_status_LEDs_off(uint8_t LED, bool off_state);
+
 /******************************************************************
  * Constants                                                      *
  ******************************************************************/
@@ -178,11 +180,6 @@ SoftwareSerial *serialGPS;
 float last_value_dnms_laeq = -1.0;
 float last_value_dnms_la_min = -1.0;
 float last_value_dnms_la_max = -1.0;
-
-/*****************************************************************
- * DHT declaration                                               *
- *****************************************************************/
-DHT dht(ONEWIRE_PIN, DHT_TYPE);
 
 /*****************************************************************
  * HTU21D declaration                                            *
@@ -396,6 +393,7 @@ const char JSON_SENSOR_DATA_VALUES[] PROGMEM = "sensordatavalues";
 #include "OTA.h"
 // Sensors
 #include "./sensors/Noise/DNMS.h"
+#include "./sensors/Temperature_Humidity/DHT/DHT_func.h"
 
 /*****************************************************************
  * display values                                                *
@@ -1285,50 +1283,6 @@ static void send_csv(const String &data)
 	{
 		debug_outln_error(FPSTR(DBG_TXT_DATA_READ_FAILED));
 	}
-}
-
-/*****************************************************************
- * read DHT22 sensor values                                      *
- *****************************************************************/
-static void fetchSensorDHT(String &s)
-{
-	debug_outln_verbose(FPSTR(DBG_TXT_START_READING), FPSTR(SENSORS_DHT22));
-
-	// Check if valid number if non NaN (not a number) will be send.
-	last_value_DHT_T = -128;
-	last_value_DHT_H = -1;
-
-	int count = 0;
-	const int MAX_ATTEMPTS = 5;
-	while ((count++ < MAX_ATTEMPTS))
-	{
-		auto t = dht.readTemperature();
-		auto h = dht.readHumidity();
-		if (isnan(t) || isnan(h))
-		{
-			delay(100);
-			t = dht.readTemperature(false);
-			h = dht.readHumidity();
-		}
-		if (isnan(t) || isnan(h))
-		{
-			debug_outln_error(F("DHT11/DHT22 read failed"));
-		}
-		else
-		{
-			last_value_DHT_T = t;
-			last_value_DHT_H = h;
-			add_Value2Json(s, F("temperature"), FPSTR(DBG_TXT_TEMPERATURE), last_value_DHT_T);
-			add_Value2Json(s, F("humidity"), FPSTR(DBG_TXT_HUMIDITY), last_value_DHT_H);
-			switch_status_LEDs_on(DHT_LED, HIGH);
-			delay(5000);
-			switch_status_LEDs_off(DHT_LED, LOW);
-			break;
-		}
-	}
-	debug_outln_info(FPSTR(DBG_TXT_SEP));
-
-	debug_outln_verbose(FPSTR(DBG_TXT_END_READING), FPSTR(SENSORS_DHT22));
 }
 
 /*****************************************************************
