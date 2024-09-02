@@ -17,6 +17,8 @@ WebServer server(80);
 #include "html_helper.h"
 #include "sensors-africa-logo.h"
 #include "../namespace_cfg.h"
+#include "../sensors/Pressure/BMP085.h"
+#include "../sensors/Pressure/BMX280.h"
 
 // Function declarations
 static void setup_webserver();

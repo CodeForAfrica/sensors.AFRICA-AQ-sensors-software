@@ -91,12 +91,10 @@ String SOFTWARE_VERSION(SOFTWARE_VERSION_STR);
 #include <ArduinoJson.h>
 #include <DNSServer.h>
 #include <SPI.h>
-#include <Adafruit_BMP085.h>
 #include <Adafruit_SHT31.h>
 #include <StreamString.h>
 #include <DallasTemperature.h>
 #include <TinyGPS++.h>
-#include "./bmx280_i2c.h"
 #include "./sps30_i2c.h"
 #include <Adafruit_FONA.h>
 
@@ -179,16 +177,6 @@ SoftwareSerial *serialGPS;
 float last_value_dnms_laeq = -1.0;
 float last_value_dnms_la_min = -1.0;
 float last_value_dnms_la_max = -1.0;
-
-/*****************************************************************
- * BMP declaration                                               *
- *****************************************************************/
-Adafruit_BMP085 bmp;
-
-/*****************************************************************
- * BMP/BME280 declaration                                        *
- *****************************************************************/
-BMX280 bmx280;
 
 /*****************************************************************
  * SHT3x declaration                                             *
@@ -389,6 +377,8 @@ const char JSON_SENSOR_DATA_VALUES[] PROGMEM = "sensordatavalues";
 #include "./sensors/Noise/DNMS.h"
 #include "./sensors/Temperature_Humidity/DHT/DHT_func.h"
 #include "./sensors/Temperature_Humidity/HTU21DF/HTU21DF.h"
+#include "./sensors/Pressure/BMP085.h"
+#include "./sensors/Pressure/BMX280.h"
 
 /*****************************************************************
  * display values                                                *
@@ -1281,32 +1271,6 @@ static void send_csv(const String &data)
 }
 
 /*****************************************************************
- * read BMP180 sensor values                                     *
- *****************************************************************/
-static void fetchSensorBMP(String &s)
-{
-	debug_outln_verbose(FPSTR(DBG_TXT_START_READING), FPSTR(SENSORS_BMP180));
-
-	const auto p = bmp.readPressure();
-	const auto t = bmp.readTemperature();
-	if (isnan(p) || isnan(t))
-	{
-		last_value_BMP_T = -128.0;
-		last_value_BMP_P = -1.0;
-		debug_outln_error(F("BMP180 read failed"));
-	}
-	else
-	{
-		last_value_BMP_T = t;
-		last_value_BMP_P = p;
-		add_Value2Json(s, F("BMP_pressure"), FPSTR(DBG_TXT_PRESSURE), last_value_BMP_P);
-		add_Value2Json(s, F("BMP_temperature"), FPSTR(DBG_TXT_TEMPERATURE), last_value_BMP_T);
-	}
-	debug_outln_info(FPSTR(DBG_TXT_SEP));
-	debug_outln_verbose(FPSTR(DBG_TXT_END_READING), FPSTR(SENSORS_BMP180));
-}
-
-/*****************************************************************
  * read SHT3x sensor values                                      *
  *****************************************************************/
 static void fetchSensorSHT3x(String &s)
@@ -1330,45 +1294,6 @@ static void fetchSensorSHT3x(String &s)
 	}
 	debug_outln_info(FPSTR(DBG_TXT_SEP));
 	debug_outln_verbose(FPSTR(DBG_TXT_END_READING), FPSTR(SENSORS_SHT3X));
-}
-
-/*****************************************************************
- * read BMP280/BME280 sensor values                              *
- *****************************************************************/
-static void fetchSensorBMX280(String &s)
-{
-	debug_outln_verbose(FPSTR(DBG_TXT_START_READING), FPSTR(SENSORS_BMX280));
-
-	bmx280.takeForcedMeasurement();
-	const auto t = bmx280.readTemperature();
-	const auto p = bmx280.readPressure();
-	const auto h = bmx280.readHumidity();
-	if (isnan(t) || isnan(p))
-	{
-		last_value_BMX280_T = -128.0;
-		last_value_BMX280_P = -1.0;
-		last_value_BME280_H = -1.0;
-		debug_outln_error(F("BMP/BME280 read failed"));
-	}
-	else
-	{
-		last_value_BMX280_T = t;
-		last_value_BMX280_P = p;
-		if (bmx280.sensorID() == BME280_SENSOR_ID)
-		{
-			add_Value2Json(s, F("BME280_temperature"), FPSTR(DBG_TXT_TEMPERATURE), last_value_BMX280_T);
-			add_Value2Json(s, F("BME280_pressure"), FPSTR(DBG_TXT_PRESSURE), last_value_BMX280_P);
-			last_value_BME280_H = h;
-			add_Value2Json(s, F("BME280_humidity"), FPSTR(DBG_TXT_HUMIDITY), last_value_BME280_H);
-		}
-		else
-		{
-			add_Value2Json(s, F("BMP280_pressure"), FPSTR(DBG_TXT_PRESSURE), last_value_BMX280_P);
-			add_Value2Json(s, F("BMP280_temperature"), FPSTR(DBG_TXT_TEMPERATURE), last_value_BMX280_T);
-		}
-	}
-	debug_outln_info(FPSTR(DBG_TXT_SEP));
-	debug_outln_verbose(FPSTR(DBG_TXT_END_READING), FPSTR(SENSORS_BMX280));
 }
 
 /*****************************************************************
