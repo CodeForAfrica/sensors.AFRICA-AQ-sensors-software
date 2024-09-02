@@ -91,7 +91,6 @@ String SOFTWARE_VERSION(SOFTWARE_VERSION_STR);
 #include <ArduinoJson.h>
 #include <DNSServer.h>
 #include <SPI.h>
-#include <Adafruit_SHT31.h>
 #include <StreamString.h>
 #include <DallasTemperature.h>
 #include <TinyGPS++.h>
@@ -177,11 +176,6 @@ SoftwareSerial *serialGPS;
 float last_value_dnms_laeq = -1.0;
 float last_value_dnms_la_min = -1.0;
 float last_value_dnms_la_max = -1.0;
-
-/*****************************************************************
- * SHT3x declaration                                             *
- *****************************************************************/
-Adafruit_SHT31 sht3x;
 
 /*****************************************************************
  * DS18B20 declaration                                            *
@@ -377,6 +371,7 @@ const char JSON_SENSOR_DATA_VALUES[] PROGMEM = "sensordatavalues";
 #include "./sensors/Noise/DNMS.h"
 #include "./sensors/Temperature_Humidity/DHT/DHT_func.h"
 #include "./sensors/Temperature_Humidity/HTU21DF/HTU21DF.h"
+#include "./sensors/Temperature_Humidity/SHT3X/SHT31.h"
 #include "./sensors/Pressure/BMP085.h"
 #include "./sensors/Pressure/BMX280.h"
 
@@ -1268,32 +1263,6 @@ static void send_csv(const String &data)
 	{
 		debug_outln_error(FPSTR(DBG_TXT_DATA_READ_FAILED));
 	}
-}
-
-/*****************************************************************
- * read SHT3x sensor values                                      *
- *****************************************************************/
-static void fetchSensorSHT3x(String &s)
-{
-	debug_outln_verbose(FPSTR(DBG_TXT_START_READING), FPSTR(SENSORS_SHT3X));
-
-	const auto t = sht3x.readTemperature();
-	const auto h = sht3x.readHumidity();
-	if (isnan(h) || isnan(t))
-	{
-		last_value_SHT3X_T = -128.0;
-		last_value_SHT3X_H = -1.0;
-		debug_outln_error(F("SHT3X read failed"));
-	}
-	else
-	{
-		last_value_SHT3X_T = t;
-		last_value_SHT3X_H = h;
-		add_Value2Json(s, F("SHT3X_temperature"), FPSTR(DBG_TXT_TEMPERATURE), last_value_SHT3X_T);
-		add_Value2Json(s, F("SHT3X_humidity"), FPSTR(DBG_TXT_HUMIDITY), last_value_SHT3X_H);
-	}
-	debug_outln_info(FPSTR(DBG_TXT_SEP));
-	debug_outln_verbose(FPSTR(DBG_TXT_END_READING), FPSTR(SENSORS_SHT3X));
 }
 
 /*****************************************************************
