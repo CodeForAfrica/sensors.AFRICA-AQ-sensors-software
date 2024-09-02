@@ -91,7 +91,6 @@ String SOFTWARE_VERSION(SOFTWARE_VERSION_STR);
 #include <ArduinoJson.h>
 #include <DNSServer.h>
 #include <SPI.h>
-#include <Adafruit_HTU21DF.h>
 #include <Adafruit_BMP085.h>
 #include <Adafruit_SHT31.h>
 #include <StreamString.h>
@@ -180,11 +179,6 @@ SoftwareSerial *serialGPS;
 float last_value_dnms_laeq = -1.0;
 float last_value_dnms_la_min = -1.0;
 float last_value_dnms_la_max = -1.0;
-
-/*****************************************************************
- * HTU21D declaration                                            *
- *****************************************************************/
-Adafruit_HTU21DF htu21d;
 
 /*****************************************************************
  * BMP declaration                                               *
@@ -394,6 +388,7 @@ const char JSON_SENSOR_DATA_VALUES[] PROGMEM = "sensordatavalues";
 // Sensors
 #include "./sensors/Noise/DNMS.h"
 #include "./sensors/Temperature_Humidity/DHT/DHT_func.h"
+#include "./sensors/Temperature_Humidity/HTU21DF/HTU21DF.h"
 
 /*****************************************************************
  * display values                                                *
@@ -1283,33 +1278,6 @@ static void send_csv(const String &data)
 	{
 		debug_outln_error(FPSTR(DBG_TXT_DATA_READ_FAILED));
 	}
-}
-
-/*****************************************************************
- * read HTU21D sensor values                                     *
- *****************************************************************/
-static void fetchSensorHTU21D(String &s)
-{
-	debug_outln_verbose(FPSTR(DBG_TXT_START_READING), FPSTR(SENSORS_HTU21D));
-
-	const auto t = htu21d.readTemperature();
-	const auto h = htu21d.readHumidity();
-	if (isnan(t) || isnan(h))
-	{
-		last_value_HTU21D_T = -128.0;
-		last_value_HTU21D_H = -1.0;
-		debug_outln_error(F("HTU21D read failed"));
-	}
-	else
-	{
-		last_value_HTU21D_T = t;
-		last_value_HTU21D_H = h;
-		add_Value2Json(s, F("HTU21D_temperature"), FPSTR(DBG_TXT_TEMPERATURE), last_value_HTU21D_T);
-		add_Value2Json(s, F("HTU21D_humidity"), FPSTR(DBG_TXT_HUMIDITY), last_value_HTU21D_H);
-	}
-	debug_outln_info(FPSTR(DBG_TXT_SEP));
-
-	debug_outln_verbose(FPSTR(DBG_TXT_END_READING), FPSTR(SENSORS_HTU21D));
 }
 
 /*****************************************************************
