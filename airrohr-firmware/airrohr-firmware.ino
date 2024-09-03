@@ -1045,30 +1045,6 @@ void switch_status_LEDs_off(uint8_t LED, bool off_state)
 	digitalWrite(LED, LOW);
 }
 
-/*****************************************************************
- * Init BMP280/BME280                                            *
- *****************************************************************/
-static bool initBMX280(char addr)
-{
-	debug_out(String(F("Trying BMP280/BME280 sensor on ")) + String(addr, HEX), DEBUG_MIN_INFO);
-
-	if (bmx280.begin(addr))
-	{
-		debug_outln_info(FPSTR(DBG_TXT_FOUND));
-		bmx280.setSampling(
-			BMX280::MODE_FORCED,
-			BMX280::SAMPLING_X1,
-			BMX280::SAMPLING_X1,
-			BMX280::SAMPLING_X1);
-		return true;
-	}
-	else
-	{
-		debug_outln_info(FPSTR(DBG_TXT_NOT_FOUND));
-		return false;
-	}
-}
-
 static void powerOnTestSensors()
 {
 	if (cfg::ppd_read)
