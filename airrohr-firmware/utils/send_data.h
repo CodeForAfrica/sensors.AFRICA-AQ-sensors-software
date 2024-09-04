@@ -384,4 +384,37 @@ static void send_csv(const String &data)
     }
 }
 
+/*****************************************************************
+ * aircms.online helper functions                                *
+ *****************************************************************/
+static String sha1Hex(const String &s)
+{
+    char sha1sum_output[20];
+
+#if defined(ESP8266)
+    br_sha1_context sc;
+
+    br_sha1_init(&sc);
+    br_sha1_update(&sc, s.c_str(), s.length());
+    br_sha1_out(&sc, sha1sum_output);
+#endif
+#if defined(ESP32)
+    esp_sha(SHA1, (const unsigned char *)s.c_str(), s.length(), (unsigned char *)sha1sum_output);
+#endif
+    String r;
+    for (uint16_t i = 0; i < 20; i++)
+    {
+        char hex[3];
+        snprintf(hex, sizeof(hex), "%02x", sha1sum_output[i]);
+        r += hex;
+    }
+    return r;
+}
+
+static String hmac1(const String &secret, const String &s)
+{
+    String str = sha1Hex(s);
+    str = secret + str;
+    return sha1Hex(str);
+}
 #endif
