@@ -38,6 +38,20 @@ static void webserver_data_json();
 static void webserver_prometheus_endpoint();
 static void webserver_images();
 static void webserver_not_found();
+static void webserver_render_ota_upload_page();
+void uploadFiles();
+void webserver_parse_checksum();
+
+// Variables
+extern String firmware_checksum;
+String fname = "";
+
+// Replace bin filenames with the exactly the ones you want to upload
+extern String new_firmware_filename;
+
+bool firmware_bin_saved = false;
+
+File uploadFile; // a File object to temporarily store the received
 
 // Function definitions
 
@@ -59,6 +73,13 @@ static void setup_webserver()
     server.on(F("/data.json"), webserver_data_json);
     server.on(F("/metrics"), webserver_prometheus_endpoint);
     server.on(F("/images"), webserver_images);
+    server.on(F("/ota_update"), webserver_render_ota_upload_page); // GET request
+    server.on(F("/ota_upload"), HTTP_POST, []()
+              {
+                server.sendHeader(F("Access-Control-Allow-Origin"), F("*"));
+                server.send(200); }, uploadFiles);
+    server.on(F("/parse_checksum"), webserver_parse_checksum); // ? Useful is bin checksum is to be validated
+
     server.onNotFound(webserver_not_found);
 
     debug_outln_info(F("Starting Webserver... "), WiFi.localIP().toString());
@@ -1066,4 +1087,101 @@ static void webserver_not_found()
     }
 }
 
+// OTA UPDATE
+
+static void webserver_render_ota_upload_page()
+{
+
+    String form_input = "";
+    RESERVE_STRING(page_content, XLARGE_STR);
+    start_html_page(page_content, "OTA update");
+    server.sendContent(page_content);
+    page_content = "";
+    page_content += "<br/><br/>";
+    page_content += F("<form  method='POST' action='/ota_upload' enctype='multipart/form-data' style='width:100%;'>\n<b> OTA OVER ESP AP WEBSERVER </b><br/>");
+    page_content += F("<b> Firmware Bin</b><br/>");
+    // form_input += F("<div><label for='fmw_checksum'><input type='text' name='fmw_checksum' id='fmw_checksum'  placeholder='Enter firmware checksum'><br/>");
+    form_input += F("<label for='firmware'>Firmware bin file</label><input type='file' name='firmware' id='firmware' accept='.bin' required></div><br/>");
+    page_content += form_input;
+    page_content += F("<br/><br/><div><input  type='submit' value='Upload'></div> </form>");
+    end_html_page(page_content);
+}
+
+void uploadFiles()
+{
+    // upload a new file to the SPIFFS
+    HTTPUpload &upload = server.upload();
+    if (upload.status == UPLOAD_FILE_START)
+    {
+
+        fname = upload.filename;
+        if (!fname.startsWith("/"))
+            fname = "/" + fname;
+        Serial.print("Upload File Name: ");
+        Serial.println(fname);
+        uploadFile = SPIFFS.open(fname, "w"); // Open the file for writing in SPIFFS (create if it doesn't exist)
+        if (uploadFile)
+        {
+            Serial.println("File opened");
+        }
+        // fname = String();
+        Serial.print("fname: ");
+        Serial.println(fname);
+    }
+    else if (upload.status == UPLOAD_FILE_WRITE)
+    {
+        if (uploadFile)
+        {
+            uploadFile.write(upload.buf, upload.currentSize);
+            // Serial.println("written");
+        }
+    }
+
+    else if (upload.status == UPLOAD_FILE_END)
+    {
+        if (uploadFile)
+        {                       // If the file was successfully created
+            uploadFile.close(); // Close the file again
+            Serial.print("File Upload Size: ");
+            Serial.println(upload.totalSize);
+            String msg = "201: Successfully uploaded file ";
+            msg += fname;
+            server.send(200, "text/plain", msg);
+            Serial.println(msg);
+
+            if (fname == new_firmware_filename)
+            {
+                firmware_bin_saved = true;
+            }
+        }
+        else
+        {
+            String err_msg = "500: failed creating file ";
+            err_msg += fname;
+            server.send(500, "text/plain", err_msg);
+            Serial.println(err_msg);
+        }
+    }
+}
+
+void webserver_parse_checksum()
+{
+
+    if (server.args() > 0)
+    {
+
+        // get server post arguements
+        if (!server.hasArg("fmw_checksum"))
+        {
+            Serial.println("Firmware bin MD5 checksum missing");
+            return;
+        }
+        firmware_checksum = server.arg("fmw_checksum");
+
+        Serial.print("Firmware checksum");
+        Serial.println(firmware_checksum);
+        server.sendHeader(F("Access-Control-Allow-Origin"), F("*"));
+        server.send(200, "text/plain", "checksums received");
+    }
+}
 #endif

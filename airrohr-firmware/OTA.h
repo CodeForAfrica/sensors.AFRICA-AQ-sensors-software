@@ -8,11 +8,22 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #endif
+
+// Webserver OTA Varibales
+
+String firmware_checksum = "";
+// Replace bin filenames with the exactly the ones you want to upload
+String new_firmware_filename = "/new_firmware.bin";
+extern bool firmware_bin_saved;
+
 // Function declarations
 static bool fwDownloadStream(WiFiClientSecure &client, const String &url, Stream *ostream);
 static bool fwDownloadStreamFile(WiFiClientSecure &client, const String &url, const String &fname);
 static bool launchUpdateLoader(const String &md5);
 static void twoStageOTAUpdate();
+
+void firmware_update();
+static bool SPIFFSAutoUpdate(String newFirmware, String newMD5);
 
 // Function definitions
 static bool fwDownloadStream(WiFiClientSecure &client, const String &url, Stream *ostream)
@@ -218,6 +229,102 @@ static void twoStageOTAUpdate()
         return;
     }
 #endif
+}
+
+// Webserver OTA functions
+void firmware_update()
+{
+
+    // validate new firmware file md5
+
+    // if (!validate_bin_md5(new_firmware_filename, firmware_checksum))
+    // {
+    //     Serial.print("Deleting file: ");
+    //     Serial.println(new_firmware_filename);
+    //     SPIFFS.remove(new_firmware_filename);
+    //     firmware_bin_saved = false;
+    //     Serial.println("firmware update failed at md5 checksum validation");
+    //     return;
+    // }
+
+    // begin update
+
+    if (!SPIFFSAutoUpdate(new_firmware_filename, firmware_checksum))
+    {
+        Serial.println("SPIFFS auto update failed. Deleting files");
+        SPIFFS.remove(new_firmware_filename);
+
+        firmware_bin_saved = false;
+    }
+}
+
+static bool SPIFFSAutoUpdate(String newFirmware, String newMD5)
+{
+
+    if (!SPIFFS.exists(newFirmware))
+    {
+        Serial.print("No Firmware file found, looking for: ");
+        Serial.println(newFirmware);
+        return false;
+    }
+    File updateFile = SPIFFS.open(newFirmware, "r");
+    if (!updateFile)
+    {
+        Serial.print("Failed to open : ");
+        Serial.print(newFirmware);
+        return false;
+    }
+
+    unsigned int free_space = ESP.getFreeSketchSpace();
+    Serial.print("EsP free sketch space: ");
+    Serial.println(free_space);
+
+    if (updateFile.size() >= ESP.getFreeSketchSpace())
+    {
+        Serial.println("Cannot update, Firmware too large");
+        return false;
+    }
+    if (!Update.begin(updateFile.size(), U_FLASH))
+    {
+        StreamString error;
+        Update.printError(error);
+
+        Serial.print("Update.begin returned: "),
+            Serial.println(error);
+        return false;
+    }
+
+    // set MD5
+    Update.setMD5(newMD5.c_str());
+
+    if (Update.writeStream(updateFile) != updateFile.size())
+    {
+        StreamString error;
+        Update.printError(error);
+
+        Serial.print("Update.writeStream returned: ");
+        Serial.print(error);
+        return false;
+    }
+    updateFile.close();
+
+    if (!Update.end())
+    {
+        StreamString error;
+        Update.printError(error);
+
+        Serial.println("Update.end() returned: ");
+        Serial.print(error);
+        return false;
+    }
+
+    Serial.println("Erasing SDK config.");
+    ESP.eraseConfig();
+
+    Serial.println("Finished successfully.. Rebooting!");
+    delay(500);
+    ESP.restart();
+    return true;
 }
 
 #endif
