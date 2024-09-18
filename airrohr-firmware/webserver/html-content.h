@@ -62,7 +62,7 @@ input[type='submit']:hover {background:#d44} \
 </style>\
 </head><body>\
 <div style='min-height:129px;background-color:#3ba;margin-bottom:20px;box-shadow:0px 4px 6px #3ba'>\
-<a href='/' style='background:none;display:inline'><img src='/images?name=luftdaten_logo' style='float:left;margin:20px' width='100' height='89'/></a>";
+<a href='/' style='background:none;display:inline'><img src='/images?name=sensorsafrica_logo' style='float:left;margin:20px' width='100' height='89'/></a>";
 
 const char WEB_PAGE_HEADER_BODY[] PROGMEM = "<h3 style='margin:0'>" INTL_PM_SENSOR "</h3>\
 <small>ID: {id}<br/>MAC: {mac}<br/>" INTL_FIRMWARE ": " SOFTWARE_VERSION_STR "<br/>(" __DATE__ " " __TIME__ ")<br/>\
