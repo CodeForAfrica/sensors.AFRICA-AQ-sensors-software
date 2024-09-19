@@ -1147,12 +1147,14 @@ void uploadFiles()
             String msg = "201: Successfully uploaded file ";
             msg += fname;
             server.send(200, "text/plain", msg);
+            server.send(200, FPSTR(TXT_CONTENT_TYPE_TEXT_HTML), FPSTR("<html><body><p>File(s) uploaded successfully><br/>Redirecting...</p><script type=\"text/javascript\">setTimeout(()=>{window.location = \"http://192.168.4.1/config\";},2000);</script></body></html>)"));
             Serial.println(msg);
 
             if (fname == new_firmware_filename)
             {
                 firmware_bin_saved = true;
             }
+            delay(200);
         }
         else
         {

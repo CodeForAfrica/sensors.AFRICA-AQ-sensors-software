@@ -186,7 +186,7 @@ static void connectWifi()
 
     debug_outln_info(FPSTR(DBG_TXT_CONNECTING_TO), cfg::wlanssid);
 
-    waitForWifiToConnect(40);
+    waitForWifiToConnect(40); // 20 second timeout to connect to wifi details form SPIFFS config.json file
     debug_outln_info(emptyString);
     if (WiFi.status() != WL_CONNECTED)
     {
@@ -195,17 +195,31 @@ static void connectWifi()
         wifiConfig();
         if (WiFi.status() != WL_CONNECTED)
         {
-            waitForWifiToConnect(20);
+            waitForWifiToConnect(20); // 10 second timeout to connect
             debug_outln_info(emptyString);
         }
     }
-    debug_outln_info(F("WiFi connected, IP is: "), WiFi.localIP().toString());
-    last_signal_strength = WiFi.RSSI();
 
-    if (MDNS.begin(cfg::fs_ssid))
+    // Check again if WiFi is connected else setup webserver again on AP mode
+    if (WiFi.status() == WL_CONNECTED)
     {
-        MDNS.addService("http", "tcp", 80);
-        MDNS.addServiceTxt("http", "tcp", "PATH", "/config");
+        debug_outln_info(F("WiFi connected, IP is: "), WiFi.localIP().toString());
+        last_signal_strength = WiFi.RSSI();
+
+        if (MDNS.begin(cfg::fs_ssid))
+        {
+            MDNS.addService("http", "tcp", 80);
+            MDNS.addServiceTxt("http", "tcp", "PATH", "/config");
+        }
+    }
+    else
+    {
+        // Set up AP mode as in WifiConfig
+        Serial.println("Failed to connect to a WiFi hotspot. Setting AP Mode and webserver");
+        WiFi.mode(WIFI_AP);
+        const IPAddress apIP(192, 168, 4, 1);
+        WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
+        WiFi.softAP(cfg::fs_ssid, cfg::fs_pwd, selectChannelForAp());
     }
 }
 

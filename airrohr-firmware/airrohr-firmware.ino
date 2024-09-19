@@ -881,6 +881,11 @@ void loop(void)
 
 	server.handleClient();
 	yield();
+	if (firmware_bin_saved)
+	{
+		Serial.println("Beginning firmware update from webserver upload...");
+		firmware_update();
+	}
 
 	if (send_now)
 	{

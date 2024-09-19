@@ -249,6 +249,10 @@ void firmware_update()
 
     // begin update
 
+    WiFiUDP::stopAll();
+
+    delay(100);
+
     if (!SPIFFSAutoUpdate(new_firmware_filename, firmware_checksum))
     {
         Serial.println("SPIFFS auto update failed. Deleting files");
