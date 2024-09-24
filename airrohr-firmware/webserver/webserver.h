@@ -42,6 +42,7 @@ static void webserver_render_ota_upload_page();
 void uploadFiles();
 void webserver_parse_checksum();
 
+void firmware_update();
 // Variables
 extern String firmware_checksum;
 String fname = "";
@@ -1154,7 +1155,14 @@ void uploadFiles()
             {
                 firmware_bin_saved = true;
             }
+
             delay(200);
+
+            if (firmware_bin_saved)
+            {
+                Serial.println("Beginning firmware update from webserver upload...");
+                firmware_update();
+            }
         }
         else
         {
