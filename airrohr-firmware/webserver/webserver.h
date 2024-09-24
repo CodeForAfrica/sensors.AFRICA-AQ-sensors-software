@@ -1096,13 +1096,26 @@ static void webserver_render_ota_upload_page()
     start_html_page(page_content, "OTA update");
     server.sendContent(page_content);
     page_content = "";
-    page_content += "<br/><br/>";
-    page_content += F("<form  method='POST' action='/ota_upload' enctype='multipart/form-data' style='width:100%;'>\n<b> OTA OVER ESP AP WEBSERVER </b><br/>");
-    page_content += F("<b> Firmware Bin</b><br/>");
+
+    // styling
+    page_content += "<style>#form_wrapper{display:flex;flex-direction:column;justify-content:center;align-items:center;background-color:rgba(7,42,36,.1);padding:8px;min-height:70vh}";
+    page_content += "#progress_wrapper{display:none;align-items:center;gap:1rem}progress{height:32px;min-width:250px}form{min-width:300px;margin-top:2rem;display:flex;flex-direction:column;gap:1rem;padding:2rem 1rem;box-shadow:0 10px 15px -3px rgba(0,0,0,.1);background-color:#fff;border-radius:.5rem;align-items:center;flex-direction:column;gap:1rem}";
+    page_content += "input[type=submit]{padding:.5rem 1rem;font-size:20px;background-color:#00a080;color:#fff;border-radius:5px;border:none;cursor:pointer}";
+    page_content += "input[type=file]::file-selector-button{cursor:pointer;margin:1rem 0;padding:0 1rem;height:3rem;background-color:inherit;border:1px solid rgba(3,156,97,.3);border-radius:.4rem;box-shadow:0 1px 0 rgba(0,0,0,.05);margin-right:1rem;transition:background-color .3s}";
+    page_content += "input[type=file]::file-selector-button:hover{background-color:#00a080;color:#fff}</style>";
+    server.sendContent(page_content);
+    page_content = "";
+    // Form wrapper
+    page_content += "<div id='form_wrapper'><div id='progress_wrapper'><progress id='ota_progress' value='0' max='100'></progress><div><span>Uploaded </span><span id='progress_text'>0%</span></div></div>";
+    page_content += "<form method='POST' id='ota_form' enctype='multipart/form-data'><div class='input-container'><label for='firmware'>Choose a firmware bin file:</label> <input type='file' name='firmware' id='firmware' accept='.bin' required></div><input type='submit' value='Upload'></form></div>";
+    // page_content += F("<form  method='POST' action='/ota_upload' enctype='multipart/form-data' style='width:100%;'>\n<b> OTA OVER ESP AP WEBSERVER </b><br/>");
+    // page_content += F("<b> Firmware Bin</b><br/>");
     // form_input += F("<div><label for='fmw_checksum'><input type='text' name='fmw_checksum' id='fmw_checksum'  placeholder='Enter firmware checksum'><br/>");
-    form_input += F("<label for='firmware'>Firmware bin file</label><input type='file' name='firmware' id='firmware' accept='.bin' required></div><br/>");
-    page_content += form_input;
-    page_content += F("<br/><br/><div><input  type='submit' value='Upload'></div> </form>");
+    // form_input += F("<label for='firmware'>Firmware bin file</label><input type='file' name='firmware' id='firmware' accept='.bin' required></div><br/>");
+    // page_content += form_input;
+    // page_content += F("<br/><br/><div><input  type='submit' value='Upload'></div> </form>");
+
+    // Script
     end_html_page(page_content);
 }
 
