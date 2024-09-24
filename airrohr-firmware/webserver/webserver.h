@@ -50,8 +50,6 @@ String fname = "";
 // Replace bin filenames with the exactly the ones you want to upload
 extern String new_firmware_filename;
 
-bool firmware_bin_saved = false;
-
 File uploadFile; // a File object to temporarily store the received
 
 // Function definitions
@@ -1116,8 +1114,26 @@ void uploadFiles()
     {
 
         fname = upload.filename;
+        int dot_index = fname.lastIndexOf(".");
+        if (dot_index == -1)
+        {
+            Serial.println("No file extenstion found ");
+            server.send(400, FPSTR(TXT_CONTENT_TYPE_TEXT_PLAIN), "No file extenstion found");
+            return;
+        }
+        else
+        {
+            String extension = fname.substring(dot_index + 1);
+            Serial.println(extension);
+            if (extension != "bin")
+            {
+                Serial.println("File is not a bin file");
+                server.send(400, FPSTR(TXT_CONTENT_TYPE_TEXT_PLAIN), "File is not a bin file");
+                return;
+            }
+        }
         if (!fname.startsWith("/"))
-            fname = "/" + fname;
+            fname = "/" + new_firmware_filename; // assign any bin file to a new file name
         Serial.print("Upload File Name: ");
         Serial.println(fname);
         uploadFile = SPIFFS.open(fname, "w"); // Open the file for writing in SPIFFS (create if it doesn't exist)
@@ -1151,18 +1167,10 @@ void uploadFiles()
             server.send(200, FPSTR(TXT_CONTENT_TYPE_TEXT_HTML), FPSTR("<html><body><p>File(s) uploaded successfully><br/>Redirecting...</p><script type=\"text/javascript\">setTimeout(()=>{window.location = \"http://192.168.4.1/config\";},2000);</script></body></html>)"));
             Serial.println(msg);
 
-            if (fname == new_firmware_filename)
-            {
-                firmware_bin_saved = true;
-            }
+            delay(2000);
 
-            delay(200);
-
-            if (firmware_bin_saved)
-            {
-                Serial.println("Beginning firmware update from webserver upload...");
-                firmware_update();
-            }
+            Serial.println("Beginning firmware update from webserver upload...");
+            firmware_update();
         }
         else
         {
