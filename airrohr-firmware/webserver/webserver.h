@@ -1115,7 +1115,20 @@ static void webserver_render_ota_upload_page()
     // page_content += form_input;
     // page_content += F("<br/><br/><div><input  type='submit' value='Upload'></div> </form>");
 
+    server.sendContent(page_content);
     // Script
+    page_content = "";
+    page_content += "<script>";
+    page_content += "function msgLogger(e,o){log.innerText=e,log.style.color='error'===o?'red':'#00a080',form.appendChild(log)}";
+    page_content += "function handleSubmit(e){if(e.preventDefault(),e.stopPropagation(),fileName=inputFile.value,extension=fileName.split('.').pop(),'bin'!==extension)return void msgLogger('File must be bin file!','error');";
+    page_content += "console.log('Sending form data');const o='/ota_upload',t='POST';let r=new XMLHttpRequest;const n=new FormData(form),s=new FormData;s.append('firmware',n.get('firmware'));for(const[e,o]of n)console.log(`${e}: ${o}`);";
+    page_content += "r.onreadystatechange=function(){if(4===r.readyState&&200===r.status){console.log(r.responseText);let e=r.getResponseHeader('Content-Type');";
+    page_content += " e.includes('text/html')?document.body.innerHTML=r.responseText:(msgLogger(r.responseText),setTimeout(()=>{let e=' <p>File Saved Successfully!</p><p>Attempting firmware update...</p>';document.body.innerHTML=e},2e3))}},";
+    page_content += "r.upload.onloadstart=function(e){console.log('upload started'),console.log(`Event bytes: ${e.total} `),progressWrapper.style.display='flex'},r.upload.onprogress=function(e){console.log(`Loaded ${e.loaded} bytes of ${e.total}`),";
+    page_content += "progressBar.max=e.total,progressBar.value=e.loaded,progressText.innerText=100*Math.ceil(e.loaded/e.total)+'%'},r.upload.ontimeout=function(){msgLogger('Upload timeout','error')},r.upload.onerror=function(){msgLogger('Error uploading file','error')},";
+    page_content += "r.timeout=3e4,r.open(t,o),r.send(s)}const form=document.querySelector('#ota_form'),inputFile=document.querySelector('#firmware'),progressWrapper=document.querySelector('#progress_wrapper'),progressBar=document.querySelector('#ota_progress'),";
+    page_content += "progressText=document.querySelector('#progress_text'),log=document.createElement('p');form.addEventListener('submit',handleSubmit);";
+    page_content += "</script>";
     end_html_page(page_content);
 }
 
