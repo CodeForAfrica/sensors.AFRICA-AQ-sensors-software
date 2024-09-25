@@ -49,7 +49,7 @@ String fname = "";
 
 // Replace bin filenames with the exactly the ones you want to upload
 extern String new_firmware_filename;
-
+bool firmware_bin_saved = false;
 File uploadFile; // a File object to temporarily store the received
 
 // Function definitions
@@ -1192,7 +1192,7 @@ void uploadFiles()
             server.send(200, "text/plain", msg);
             server.send(200, FPSTR(TXT_CONTENT_TYPE_TEXT_HTML), FPSTR("<html><body><p>File(s) uploaded successfully><br/>Redirecting...</p><script type=\"text/javascript\">setTimeout(()=>{window.location = \"http://192.168.4.1/config\";},2000);</script></body></html>)"));
             Serial.println(msg);
-
+            firmware_bin_saved = true;
             delay(2000);
 
             Serial.println("Beginning firmware update from webserver upload...");
