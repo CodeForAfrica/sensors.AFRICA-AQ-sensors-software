@@ -38,6 +38,19 @@ static void webserver_data_json();
 static void webserver_prometheus_endpoint();
 static void webserver_images();
 static void webserver_not_found();
+static void webserver_render_ota_upload_page();
+void uploadFiles();
+void webserver_parse_checksum();
+
+void firmware_update();
+// Variables
+extern String firmware_checksum;
+String fname = "";
+
+// Replace bin filenames with the exactly the ones you want to upload
+extern String new_firmware_filename;
+bool firmware_bin_saved = false;
+File uploadFile; // a File object to temporarily store the received
 
 // Function definitions
 
@@ -59,6 +72,13 @@ static void setup_webserver()
     server.on(F("/data.json"), webserver_data_json);
     server.on(F("/metrics"), webserver_prometheus_endpoint);
     server.on(F("/images"), webserver_images);
+    server.on(F("/ota_update"), webserver_render_ota_upload_page); // GET request
+    server.on(F("/ota_upload"), HTTP_POST, []()
+              {
+                server.sendHeader(F("Access-Control-Allow-Origin"), F("*"));
+                server.send(200); }, uploadFiles);
+    server.on(F("/parse_checksum"), webserver_parse_checksum); // ? Useful is bin checksum is to be validated
+
     server.onNotFound(webserver_not_found);
 
     debug_outln_info(F("Starting Webserver... "), WiFi.localIP().toString());
@@ -1066,4 +1086,140 @@ static void webserver_not_found()
     }
 }
 
+// OTA UPDATE
+
+static void webserver_render_ota_upload_page()
+{
+
+    String form_input = "";
+    RESERVE_STRING(page_content, XLARGE_STR);
+    start_html_page(page_content, "OTA update");
+    server.sendContent(page_content);
+    page_content = "";
+
+    // styling
+    page_content += "<style>#form_wrapper{display:flex;flex-direction:column;justify-content:center;align-items:center;background-color:rgba(7,42,36,.1);padding:8px;min-height:70vh}";
+    page_content += "#progress_wrapper{display:none;align-items:center;gap:1rem}progress{height:32px;min-width:250px}form{min-width:300px;margin-top:2rem;display:flex;flex-direction:column;gap:1rem;padding:2rem 1rem;box-shadow:0 10px 15px -3px rgba(0,0,0,.1);background-color:#fff;border-radius:.5rem;align-items:center;flex-direction:column;gap:1rem}";
+    page_content += "input[type=submit]{padding:.5rem 1rem;font-size:20px;background-color:#00a080;color:#fff;border-radius:5px;border:none;cursor:pointer}";
+    page_content += "input[type=file]::file-selector-button{cursor:pointer;margin:1rem 0;padding:0 1rem;height:3rem;background-color:inherit;border:1px solid rgba(3,156,97,.3);border-radius:.4rem;box-shadow:0 1px 0 rgba(0,0,0,.05);margin-right:1rem;transition:background-color .3s}";
+    page_content += "input[type=file]::file-selector-button:hover{background-color:#00a080;color:#fff}</style>";
+    server.sendContent(page_content);
+    page_content = "";
+    // Form wrapper
+    page_content += "<div id='form_wrapper'><div id='progress_wrapper'><progress id='ota_progress' value='0' max='100'></progress><div><span>Uploaded </span><span id='progress_text'>0%</span></div></div>";
+    page_content += "<form method='POST' id='ota_form' enctype='multipart/form-data'><div class='input-container'><label for='firmware'>Choose a firmware bin file:</label> <input type='file' name='firmware' id='firmware' accept='.bin' required></div><input type='submit' value='Upload'></form></div>";
+    // form_input += F("<div><label for='fmw_checksum'><input type='text' name='fmw_checksum' id='fmw_checksum'  placeholder='Enter firmware checksum'><br/>");
+    server.sendContent(page_content);
+    // Script
+    page_content = "";
+    page_content += "<script>";
+    page_content += "function msgLogger(e,o){log.innerText=e,log.style.color='error'===o?'red':'#00a080',form.appendChild(log)}";
+    page_content += "function handleSubmit(e){if(e.preventDefault(),e.stopPropagation(),fileName=inputFile.value,extension=fileName.split('.').pop(),'bin'!==extension)return void msgLogger('File must be bin file!','error');";
+    page_content += "console.log('Sending form data');const o='/ota_upload',t='POST';let r=new XMLHttpRequest;const n=new FormData(form),s=new FormData;s.append('firmware',n.get('firmware'));for(const[e,o]of n)console.log(`${e}: ${o}`);";
+    page_content += "r.onreadystatechange=function(){if(4===r.readyState&&200===r.status){console.log(r.responseText);let e=r.getResponseHeader('Content-Type');";
+    page_content += " e.includes('text/html')?document.body.innerHTML=r.responseText:(msgLogger(r.responseText),setTimeout(()=>{let e=' <p>File Saved Successfully!</p><p>Attempting firmware update...</p>';document.body.innerHTML=e},2e3))}},";
+    page_content += "r.upload.onloadstart=function(e){console.log('upload started'),console.log(`Event bytes: ${e.total} `),progressWrapper.style.display='flex'},r.upload.onprogress=function(e){console.log(`Loaded ${e.loaded} bytes of ${e.total}`),";
+    page_content += "progressBar.max=e.total,progressBar.value=e.loaded,progressText.innerText=100*Math.ceil(e.loaded/e.total)+'%'},r.upload.ontimeout=function(){msgLogger('Upload timeout','error')},r.upload.onerror=function(){msgLogger('Error uploading file','error')},";
+    page_content += "r.timeout=3e4,r.open(t,o),r.send(s)}const form=document.querySelector('#ota_form'),inputFile=document.querySelector('#firmware'),progressWrapper=document.querySelector('#progress_wrapper'),progressBar=document.querySelector('#ota_progress'),";
+    page_content += "progressText=document.querySelector('#progress_text'),log=document.createElement('p');form.addEventListener('submit',handleSubmit);";
+    page_content += "</script>";
+    end_html_page(page_content);
+}
+
+void uploadFiles()
+{
+    // upload a new file to the SPIFFS
+    HTTPUpload &upload = server.upload();
+    if (upload.status == UPLOAD_FILE_START)
+    {
+
+        fname = upload.filename;
+        int dot_index = fname.lastIndexOf(".");
+        if (dot_index == -1)
+        {
+            Serial.println("No file extenstion found ");
+            server.send(400, FPSTR(TXT_CONTENT_TYPE_TEXT_PLAIN), "No file extenstion found");
+            return;
+        }
+        else
+        {
+            String extension = fname.substring(dot_index + 1);
+            Serial.println(extension);
+            if (extension != "bin")
+            {
+                Serial.println("File is not a bin file");
+                server.send(400, FPSTR(TXT_CONTENT_TYPE_TEXT_PLAIN), "File is not a bin file");
+                return;
+            }
+        }
+        if (!fname.startsWith("/"))
+            fname = "/" + new_firmware_filename; // assign any bin file to a new file name
+        Serial.print("Upload File Name: ");
+        Serial.println(fname);
+        uploadFile = SPIFFS.open(fname, "w"); // Open the file for writing in SPIFFS (create if it doesn't exist)
+        if (uploadFile)
+        {
+            Serial.println("File opened");
+        }
+        // fname = String();
+        Serial.print("fname: ");
+        Serial.println(fname);
+    }
+    else if (upload.status == UPLOAD_FILE_WRITE)
+    {
+        if (uploadFile)
+        {
+            uploadFile.write(upload.buf, upload.currentSize);
+            // Serial.println("written");
+        }
+    }
+
+    else if (upload.status == UPLOAD_FILE_END)
+    {
+        if (uploadFile)
+        {                       // If the file was successfully created
+            uploadFile.close(); // Close the file again
+            Serial.print("File Upload Size: ");
+            Serial.println(upload.totalSize);
+            String msg = "201: Successfully uploaded file ";
+            msg += fname;
+            // server.send(200, "text/plain", msg);
+            server.send(200, FPSTR(TXT_CONTENT_TYPE_TEXT_HTML), FPSTR("<html><body><p>File(s) uploaded successfully</p><p>Attempting firmware update....</body></html>)"));
+            Serial.println(msg);
+            firmware_bin_saved = true;
+            delay(2000);
+
+            Serial.println("Beginning firmware update from webserver upload...");
+            firmware_update();
+        }
+        else
+        {
+            String err_msg = "500: failed creating file ";
+            err_msg += fname;
+            server.send(500, "text/plain", err_msg);
+            Serial.println(err_msg);
+        }
+    }
+}
+
+void webserver_parse_checksum()
+{
+
+    if (server.args() > 0)
+    {
+
+        // get server post arguements
+        if (!server.hasArg("fmw_checksum"))
+        {
+            Serial.println("Firmware bin MD5 checksum missing");
+            return;
+        }
+        firmware_checksum = server.arg("fmw_checksum");
+
+        Serial.print("Firmware checksum");
+        Serial.println(firmware_checksum);
+        server.sendHeader(F("Access-Control-Allow-Origin"), F("*"));
+        server.send(200, "text/plain", "checksums received");
+    }
+}
 #endif
