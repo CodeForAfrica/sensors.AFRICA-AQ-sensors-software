@@ -1108,13 +1108,7 @@ static void webserver_render_ota_upload_page()
     // Form wrapper
     page_content += "<div id='form_wrapper'><div id='progress_wrapper'><progress id='ota_progress' value='0' max='100'></progress><div><span>Uploaded </span><span id='progress_text'>0%</span></div></div>";
     page_content += "<form method='POST' id='ota_form' enctype='multipart/form-data'><div class='input-container'><label for='firmware'>Choose a firmware bin file:</label> <input type='file' name='firmware' id='firmware' accept='.bin' required></div><input type='submit' value='Upload'></form></div>";
-    // page_content += F("<form  method='POST' action='/ota_upload' enctype='multipart/form-data' style='width:100%;'>\n<b> OTA OVER ESP AP WEBSERVER </b><br/>");
-    // page_content += F("<b> Firmware Bin</b><br/>");
     // form_input += F("<div><label for='fmw_checksum'><input type='text' name='fmw_checksum' id='fmw_checksum'  placeholder='Enter firmware checksum'><br/>");
-    // form_input += F("<label for='firmware'>Firmware bin file</label><input type='file' name='firmware' id='firmware' accept='.bin' required></div><br/>");
-    // page_content += form_input;
-    // page_content += F("<br/><br/><div><input  type='submit' value='Upload'></div> </form>");
-
     server.sendContent(page_content);
     // Script
     page_content = "";
@@ -1189,8 +1183,8 @@ void uploadFiles()
             Serial.println(upload.totalSize);
             String msg = "201: Successfully uploaded file ";
             msg += fname;
-            server.send(200, "text/plain", msg);
-            server.send(200, FPSTR(TXT_CONTENT_TYPE_TEXT_HTML), FPSTR("<html><body><p>File(s) uploaded successfully><br/>Redirecting...</p><script type=\"text/javascript\">setTimeout(()=>{window.location = \"http://192.168.4.1/config\";},2000);</script></body></html>)"));
+            // server.send(200, "text/plain", msg);
+            server.send(200, FPSTR(TXT_CONTENT_TYPE_TEXT_HTML), FPSTR("<html><body><p>File(s) uploaded successfully</p><p>Attempting firmware update....</body></html>)"));
             Serial.println(msg);
             firmware_bin_saved = true;
             delay(2000);
