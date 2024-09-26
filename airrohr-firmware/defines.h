@@ -1,3 +1,6 @@
+#ifndef DEFINES_H
+#define DEFINES_H
+
 #if defined(ESP8266)
 #define SENSOR_BASENAME "esp8266-"
 #define OTA_BASENAME "/airrohr"
@@ -13,11 +16,11 @@
 #define LEN_CFG_STRING 65
 #define LEN_CFG_PASSWORD 65
 
-#define LEN_WLANSSID 35				// credentials for wifi connection
+#define LEN_WLANSSID 35 // credentials for wifi connection
 
-#define LEN_WWW_USERNAME 65			// credentials for basic auth of server internal website
+#define LEN_WWW_USERNAME 65 // credentials for basic auth of server internal website
 
-#define LEN_FS_SSID 33				// credentials for sensor access point mode
+#define LEN_FS_SSID 33 // credentials for sensor access point mode
 
 #define LEN_DNMS_CORRECTION 10
 
@@ -61,7 +64,7 @@ static const uint16_t suites[] PROGMEM = {
 #if defined(ARDUINO_SAMD_ZERO) && defined(SERIAL_PORT_USBVIRTUAL)
 // Required for Serial on Zero based boards
 #define Serial SERIAL_PORT_USBVIRTUAL
-//GPIO Pins
+// GPIO Pins
 #define D0 0
 #define D1 1
 #define D2 2
@@ -82,26 +85,26 @@ static const uint16_t suites[] PROGMEM = {
 #endif
 
 #if defined(ESP32)
-//GPIO Pins
-// the IO pins which can be used for what depends on the following:
-//   - The board which is used
-//     - onboard peripherials like LCD or LoRa chips which already occupy an IO pin
-//     - the ESP32 module which is used
-//         - the WROVER board uses the IOs 16 and 17 to access the PSRAW
-//         - on WROOM boards the IOs 16 and 17 can be freely used  
-//   - if JTAG debugging shall be used
-//   - some IOs have constraints
-//     - configuration of ESP32 module configuration options ("strapping") like operating voltage and boot medium
-//     - some IOs can only be used for inputs (34, 35, 36, 39)
-// see https://randomnerdtutorials.com/esp32-pinout-reference-gpios/
-//     https://github.com/va3wam/TWIPi/blob/master/Eagle/doc/feather-pinout-map.pdf
+// GPIO Pins
+//  the IO pins which can be used for what depends on the following:
+//    - The board which is used
+//      - onboard peripherials like LCD or LoRa chips which already occupy an IO pin
+//      - the ESP32 module which is used
+//          - the WROVER board uses the IOs 16 and 17 to access the PSRAW
+//          - on WROOM boards the IOs 16 and 17 can be freely used
+//    - if JTAG debugging shall be used
+//    - some IOs have constraints
+//      - configuration of ESP32 module configuration options ("strapping") like operating voltage and boot medium
+//      - some IOs can only be used for inputs (34, 35, 36, 39)
+//  see https://randomnerdtutorials.com/esp32-pinout-reference-gpios/
+//      https://github.com/va3wam/TWIPi/blob/master/Eagle/doc/feather-pinout-map.pdf
 #define D0_STRAPPING 0
 #if defined(NO_USB_SERIAL_ON_UART0)
-#define D1 1  // often used for USB serial RX
+#define D1 1 // often used for USB serial RX
 #endif
 #define D2_STRAPPING 2
 #if defined(NO_USB_SERIAL_ON_UART0)
-#define D3 3  // often used USB serial TX
+#define D3 3 // often used USB serial TX
 #endif
 #define D4 4
 #define D5 5
@@ -136,4 +139,6 @@ static const uint16_t suites[] PROGMEM = {
 #define RF69_FREQ 868.0
 #define CLIENT_ADDRESS 2
 #define SERVER_ADDRESS 100
+#endif
+
 #endif
