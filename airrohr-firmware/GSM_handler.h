@@ -104,12 +104,14 @@ bool GSM_init(SoftwareSerial *gsm_serial)
         return false;
     }
 
+    fona.sendCheckReply(F("AT+COPS?"), F("OK"));
+
     // Set GPRS APN details
     // fona.setGPRSNetworkSettings(F(GPRS_APN), F(GPRS_USERNAME), F(GPRS_PASSWORD));
 
     // Attempt to enable GPRS
     Serial.println("Attempting to enable GPRS");
-    delay(2000);
+    // delay(2000);
 
     if (!GPRS_init())
         return false;
@@ -158,7 +160,7 @@ String handle_AT_CMD(String cmd, int _delay)
     }
     String RESPONSE = "";
     fona.println(cmd);
-    delay(_delay); // Avoid putting any code that might delay the receiving all contents from the serial buffer as it is quickly filled up
+    // delay(_delay); // Avoid putting any code that might delay the receiving all contents from the serial buffer as it is quickly filled up
 
     while (fona.available() > 0)
     {
@@ -176,35 +178,43 @@ String handle_AT_CMD(String cmd, int _delay)
 void SIM_PIN_Setup()
 {
 
-    String res = handle_AT_CMD("AT+CPIN?");
-    int start_index = res.indexOf(":");
-    res = res.substring(start_index + 1);
-    res.trim();
-    Serial.print("PIN STATUS: ");
-    Serial.println(res);
-    if (res.startsWith("READY"))
-    {
-        SIM_PIN_SET = true;
-        return;
-    }
+    // String res = handle_AT_CMD("AT+CPIN?");
+    // int start_index = res.indexOf(":");
+    // res = res.substring(start_index + 1);
+    // res.trim();
+    // Serial.print("PIN STATUS: ");
+    // Serial.println(res);
+    // if (res.startsWith("READY"))
+    // {
+    //     SIM_PIN_SET = true;
+    //     return;
+    // }
 
-    else if (res.startsWith("SIM PIN"))
+    // else if (res.startsWith("SIM PIN"))
+    // {
+    //     unlock_pin(SIM_PIN);
+    //     return;
+    // }
+    // else if (res.startsWith("SIM PUK"))
+    // { // ToDo: Attempt to set PUK;
+    //     return;
+    // }
+
+    if (fona.sendCheckReply(F("AT+CPIN?"), F("+CPIN: READY"), 3000))
     {
-        unlock_pin(SIM_PIN);
-        return;
-    }
-    else if (res.startsWith("SIM PUK"))
-    { // ToDo: Attempt to set PUK;
+        Serial.println("SIM PIN READY");
+        SIM_PIN_SET = true;
         return;
     }
 
     else
     {
+        Serial.println("SIM PIN NOT SET");
         return;
     }
 }
 
-bool is_SIMCID_valid()
+bool is_SIMCID_valid() // ! Seems to be returning true even when there is "ERROR" in response
 {
     // char res[30];
     // fona.getSIMCCID(res);
@@ -230,6 +240,7 @@ bool is_SIMCID_valid()
 // Similar to FONA enableGPRS() but quicker because APN setting are not configured as it is configured during GSM_init()
 bool GPRS_init()
 {
+
     String err = "";
 
     // if (!fona.sendCheckReply(F("AT+CGATT=1"), F("OK"), 10000))
@@ -307,10 +318,11 @@ void GSM_soft_reset()
     fona.enableGPRS(false); // basically shut down GPRS service
 
     if (!fona.sendCheckReply(F("AT+CFUN=1,1"), F("OK")))
-    {
-        Serial.println("Soft resetting GSM with full functionality failed!");
-        // return;
-    }
+        if (!fona.sendCheckReply(F("AT+CFUN=1,1"), F("OK")))
+        {
+            Serial.println("Soft resetting GSM with full functionality failed!");
+            return;
+        }
     Serial.println("Soft resetting the GSM module...");
     delay(30000); // wait for GSM to warm up
     // #endif
@@ -355,7 +367,7 @@ void enableGPRS()
     // fona.setGPRSNetworkSettings(FONAFlashStringPtr(gprs_apn), FONAFlashStringPtr(gprs_username), FONAFlashStringPtr(gprs_password));
 
     int retry_count = 0;
-    while ((fona.GPRSstate() != GPRS_CONNECTED) && (retry_count < 40))
+    while ((fona.GPRSstate() != 0) && (retry_count < 40))
     {
         delay(3000);
         fona.enableGPRS(true);

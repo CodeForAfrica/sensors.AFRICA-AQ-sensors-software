@@ -31,6 +31,8 @@ Configurable is
 The unencrypted Access Point for initial configuration will turn itself off after about
 10 minutes. In order to reactivate please power cycle the board.
 
+To secure the Access Point with a password, create a header file e.g. `secrets.h` and define a password e.g `#define WEBSERVER_PWD "<my_secret_password>"`. Import the header file in `ext_deh.h` and configure the device's WiFi hotspot password as `#define FS_PWD WEBSERVER_PWD`.
+
 ## DHT22 Humidity Reporting
 
 The DHT22 sensor is originally an Indoor sensor. For outdoor use it appears to be rather
