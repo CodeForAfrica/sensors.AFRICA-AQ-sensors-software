@@ -264,6 +264,7 @@ bool GPRS_init()
     }
 
 #ifdef QUECTEL
+    Serial.println("Quectel GPRS init...");
 
     if (!fona.sendCheckReply(F("AT+QICSGP=1,1"), F("OK"), 3000))
     {

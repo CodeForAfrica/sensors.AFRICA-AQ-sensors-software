@@ -96,7 +96,7 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
         // debug_out(s_url, DEBUG_MIN_INFO);
         // debug_out(gprs_request_head, DEBUG_MIN_INFO);
 
-        // #ifdef QUECTEL
+#ifdef QUECTEL
         String Quectel_headers[3];
         Quectel_headers[0] = "X-PIN: " + String(pin);
         // Quectel_headers[1] = "X-Sensor: esp8266-" + esp_chipid;
@@ -105,7 +105,7 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 
         int header_size = sizeof(Quectel_headers) / sizeof(Quectel_headers[0]);
 
-        // #endif
+#endif
 
         const char *data_copy = data.c_str();
         char gprs_data[strlen(data_copy)];
