@@ -38,7 +38,7 @@ const char WWW_PASSWORD[] PROGMEM = "feinstaub";
 #define SSL_CFA 0
 #define SEND2SENSORCOMMUNITY 0
 #define SSL_SENSORCOMMUNITY 0
-#define SEND2MADAVI 1
+#define SEND2MADAVI 0
 #define SSL_MADAVI 0
 #define SEND2SENSEMAP 0
 #define SEND2FSAPP 0
@@ -77,7 +77,7 @@ struct LoggerConfig
 };
 
 // IMPORTANT: NO MORE CHANGES TO VARIABLE NAMES NEEDED FOR EXTERNAL APIS
-static const char HOST_CFA[] PROGMEM = "api.sensors.africa";
+static const char HOST_CFA[] PROGMEM = "staging.api.sensors.africa";
 static const char URL_CFA[] PROGMEM = "/v1/push-sensor-data/";
 #define PORT_CFA 80
 
@@ -227,7 +227,7 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 #endif
 
 // DHT22, temperature, humidity
-#define DHT_READ 1
+#define DHT_READ 0
 #define DHT_TYPE DHT22
 #define DHT_API_PIN 7
 
