@@ -83,6 +83,8 @@ static void setup_webserver()
 
     debug_outln_info(F("Starting Webserver... "), WiFi.localIP().toString());
     server.begin();
+    debug_outln_info(F("Server Begun......"));
+
 }
 
 /*****************************************************************

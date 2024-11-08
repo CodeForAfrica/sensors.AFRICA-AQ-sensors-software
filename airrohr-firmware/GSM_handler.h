@@ -3,11 +3,11 @@
 #include "ext_def.h"
 
 // SoftwareSerial fonaSS(FONA_TX, FONA_RX);
-#define MCU_RXD D5
-#define MCU_TXD D6
-#define QUECTEL_PWR_KEY D8
-#define QUECTEL_DTR D9
-SoftwareSerial fonaSS(MCU_RXD, MCU_TXD); // Testing Quectel Board
+// #define MCU_RXD D5
+// #define MCU_TXD D6
+// #define QUECTEL_PWR_KEY D8
+// #define QUECTEL_DTR D9
+SoftwareSerial fonaSS(FONA_RX, FONA_TX); // Testing Quectel Board
 SoftwareSerial *fonaSerial = &fonaSS;
 Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
 
@@ -25,6 +25,7 @@ String NETWORK_NAME = "";
 bool GSM_init(SoftwareSerial *gsm_serial);
 static void unlock_pin(char *PIN);
 String handle_AT_CMD(String cmd, int _delay = 1000);
+bool gsm_on = false;
 void SIM_PIN_Setup();
 bool is_SIMCID_valid();
 bool GPRS_init();
@@ -32,6 +33,7 @@ void GSM_soft_reset();
 void restart_GSM();
 void enableGPRS();
 void flushSerial();
+void rebootGSM();
 void QUECTEL_POST(char *url, String headers[], int header_size, const String &data, int data_length);
 int GPRS_INIT_FAIL_COUNT = 0;
 int HTTP_POST_FAIL = 0;
@@ -47,9 +49,10 @@ bool GSM_init(SoftwareSerial *gsm_serial)
     // delay(3000);
     // digitalWrite(QUECTEL_PWR_KEY, HIGH);
     // delay(5000);
-    if (!fona.sendCheckReply(F("AT"), F("OK")))
+    if (!fona.sendCheckReply(F("AT"), F("AT")))
     {
         error_msg = "Could not find GSM module";
+        rebootGSM();
         GSM_INIT_ERROR = error_msg;
         Serial.println(error_msg);
         GSM_CONNECTED = false;
@@ -154,6 +157,7 @@ static void unlock_pin(char *PIN)
 
 String handle_AT_CMD(String cmd, int _delay)
 {
+    
     while (Serial.available() > 0)
     {
         Serial.read();
@@ -322,37 +326,16 @@ void GSM_soft_reset()
         if (!fona.sendCheckReply(F("AT+CFUN=1,1"), F("OK")))
         {
             Serial.println("Soft resetting GSM with full functionality failed!");
+            rebootGSM();
             return;
         }
     Serial.println("Soft resetting the GSM module...");
-    delay(30000); // wait for GSM to warm up
-    // #endif
-
-    // if (!GSM_init(fonaSerial))
-    // {
-    //     Serial.println("GSM not fully configured");
-    //     Serial.print("Failure point: ");
-    //     Serial.println(GSM_INIT_ERROR);
-    //     Serial.println();
-    // }
+    
 }
 
-/***
- * ? Called 3 times. Review the impelementation of this
- * Todo: Change implementation to shut down GSM and then call GSM_init();
- *
- *
- ***/
 void restart_GSM()
 {
     Serial.println("Restarting GSM");
-    //! The AQ PCB board has the GSM reset physically connected to the ESP chip
-    // GSM_soft_reset();
-    // if (!fona.begin(*fonaSerial))
-    // {
-    //     Serial.println("Couldn't find GSM");
-    //     return;
-    // }
 
     if (!GSM_init(fonaSerial))
     {
@@ -382,6 +365,7 @@ void disableGPRS()
 {
     fona.enableGPRS(false);
     GPRS_CONNECTED = false;
+    rebootGSM();
 }
 
 /*****************************************************************
@@ -411,7 +395,9 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
 
     // Config URL
     // String HTTP_SETUP = "AT+QHTTPURL=" + String(strlen(url), DEC) + ",10,60";
-
+    if(fona.sendCheckReply(F("AT+CPAS"), F("+CPAS: 0"))){
+        Serial.println("GSM is Idle");
+    }
     String HTTP_CFG = "AT+QHTTPCFG=\"url\",\"http://" + String(url) + "\""; // protocol must be set before URL
     Serial.print("Quectel URL config: ");
     Serial.println(HTTP_CFG);
@@ -441,7 +427,7 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
         if (HTTP_POST_FAIL > 5)
         {
             HTTP_POST_FAIL = 0;
-            GSM_soft_reset();
+            //GSM_soft_reset();
         }
     }
     Serial.print("Quectel post body: ");
@@ -453,7 +439,7 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
         if (HTTP_POST_FAIL > 5)
         {
             HTTP_POST_FAIL = 0;
-            GSM_soft_reset();
+            //GSM_soft_reset();
         }
     }
 }
@@ -480,3 +466,43 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
 // http://staging.api.sensors.africa/v1/push-sensor-data/
 // AT+QHTTPPOST=385,30,60
 // AT+QHTTPREAD
+
+
+void rebootGSM(){
+    for(int i = 5; i>0; i--){
+        Serial.println("Connecting to GSM: " + String(i));
+        delay(2000);
+        if (fona.sendCheckReply(F("AT"), F("OK"))){
+            Serial.println("GSM Board Responded");
+            gsm_on = true;
+            break;
+            
+         }
+         else{
+            gsm_on = false;
+         }
+    }
+    
+
+    while (!gsm_on){
+        delay(2000);
+        Serial.println("Rebooting GSM===========Now");
+        digitalWrite(QUECTEL_PWR_KEY,1);
+        delay(3000);
+        digitalWrite(QUECTEL_PWR_KEY, 0);
+        delay(15000);
+        for(int i = 5; i>0; i--){
+        Serial.println("Connecting to GSM: " + String(i));
+        delay(2000);
+        if (fona.sendCheckReply(F("AT"), F("AT"))){
+        gsm_on = true;
+        restart_GSM();
+        break;
+        delay(2000);
+         }
+         else{
+            gsm_on = false;
+         }
+    }
+    }
+}

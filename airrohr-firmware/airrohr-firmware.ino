@@ -640,8 +640,12 @@ static void powerOnTestSensors()
 
 void setup(void)
 {
-
-	Serial.begin(9600); // Output to Serial at 9600 baud
+	pinMode(QUECTEL_PWR_KEY, OUTPUT);
+	pinMode(FONA_RST, OUTPUT);
+	digitalWrite(QUECTEL_PWR_KEY, 0);
+	digitalWrite(FONA_RST, 0);
+    delay(3000);
+	Serial.begin(4800); // Output to Serial at 9600 baud
 
 #if defined(ESP8266)
 	serialSDS.begin(9600, SWSERIAL_8N1, PM_SERIAL_RX, PM_SERIAL_TX);
@@ -681,12 +685,24 @@ void setup(void)
 		debug_outln_error(F("ERROR: SELF TEST FAILED!"));
 		SOFTWARE_VERSION += F("-STF");
 	}
+	debug_outln_error(F("=============================="));
+	debug_outln_error(F("Logging Enabled APIs"));
 	logEnabledAPIs();
+	debug_outln_error(F("=============================="));
+	debug_outln_error(F("Logging Enabled Displays"));
 	logEnabledDisplays();
+	debug_outln_error(F("=============================="));
+	debug_outln_error(F("Initializing Configurations"));
 	init_config();
+	debug_outln_error(F("=============================="));
+	debug_outln_error(F("Initializing Displays"));
 	init_display();
 	init_lcd();
+	debug_outln_error(F("=============================="));
+	debug_outln_error(F("Setting Up Webserver"));
 	setup_webserver();
+	debug_outln_error(F("=============================="));
+	debug_outln_error(F("Creating Logger Configs"));
 	createLoggerConfigs();
 	debug_outln_info(F("\nChipId: "), esp_chipid);
 
@@ -694,18 +710,6 @@ void setup(void)
 	{
 		is_SDS_running = SDS_cmd(PmSensorCmd::Stop);
 		Serial.println("Attempting to setup GSM connection");
-
-		pinMode(QUECTEL_PWR_KEY, OUTPUT);
-		// pinMode(9, OUTPUT);
-		// // digitalWrite(16, HIGH);
-		// // delay(1000);
-		// // pinMode(16, OUTPUT);
-		// // digitalWrite(16, LOW);
-		// // delay(2500);
-		// // pinMode(16, OUTPUT);
-		// // digitalWrite(16, HIGH);
-		// digitalWrite(9, LOW);
-		delay(5000);
 
 		if (!GSM_init(fonaSerial))
 		{
@@ -715,21 +719,25 @@ void setup(void)
 			Serial.println();
 		}
 	}
-	if (!GPRS_CONNECTED)
-	{
+
+	else{
 		connectWifi();
 	}
+	// if (!GPRS_CONNECTED)
+	// {
+	// 	connectWifi();
+	// }
 	if (cfg::gps_read)
 	{
-#if defined(ESP8266)
-		serialGPS = new SoftwareSerial;
-		serialGPS->begin(9600, SWSERIAL_8N1, GPS_SERIAL_RX, GPS_SERIAL_TX, false, 128);
-#endif
-#if defined(ESP32)
-		serialGPS->begin(9600, SERIAL_8N1, GPS_SERIAL_RX, GPS_SERIAL_TX);
-#endif
-		debug_outln_info(F("Read GPS..."));
-		disable_unneeded_nmea();
+		#if defined(ESP8266)
+				serialGPS = new SoftwareSerial;
+				serialGPS->begin(9600, SWSERIAL_8N1, GPS_SERIAL_RX, GPS_SERIAL_TX, false, 128);
+		#endif
+		#if defined(ESP32)
+				serialGPS->begin(9600, SERIAL_8N1, GPS_SERIAL_RX, GPS_SERIAL_TX);
+		#endif
+				debug_outln_info(F("Read GPS..."));
+				disable_unneeded_nmea();
 	}
 
 	setupNetworkTime();
@@ -758,6 +766,7 @@ void setup(void)
  *****************************************************************/
 void loop(void)
 {
+	debug_outln_info(F("Madavi Satatus: "), cfg:: send2madavi);
 	String result_PPD, result_SDS, result_PMS, result_HPM;
 	String result_GPS, result_DNMS;
 
@@ -772,6 +781,14 @@ void loop(void)
 		msSince(time_point_device_start_ms) < 1000 * 2 * 30 + 5000)
 	{
 		debug_outln_info(F("NTP sync not finished yet, skipping send"));
+		Serial.print(F("sntp_time_set: "));
+		Serial.println(sntp_time_set);
+
+		Serial.print(F("send_now: "));
+		Serial.println(send_now);
+
+		Serial.print(F("time_point_device_start_ms: "));
+		Serial.println(time_point_device_start_ms);
 		send_now = false;
 		starttime = act_milli;
 	}
@@ -798,7 +815,7 @@ void loop(void)
 
 	if (msSince(time_point_device_start_ms) > DURATION_BEFORE_FORCED_RESTART_MS)
 	{
-		sensor_restart();
+		sensor_restart(); // Try to implement a better approach on how to reset the board.
 	}
 
 	if (msSince(last_update_attempt) > PAUSE_BETWEEN_UPDATE_ATTEMPTS_MS)
