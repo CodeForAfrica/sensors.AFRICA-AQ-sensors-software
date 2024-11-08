@@ -99,8 +99,8 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 #ifdef QUECTEL
         String Quectel_headers[3];
         Quectel_headers[0] = "X-PIN: " + String(pin);
-        //Quectel_headers[1] = "X-Sensor: esp8266-" + esp_chipid;
-        Quectel_headers[1] = "X-Sensor: esp8266-6960793";       // testing node, comment and insert desired testing node ID
+        Quectel_headers[1] = "X-Sensor: esp8266-" + esp_chipid;
+        // Quectel_headers[1] = "X-Sensor: esp8266-quectel-test";       // testing node, comment and insert desired testing node ID
         Quectel_headers[2] = "Content-Type: " + String(contentType); // 30
 
         int header_size = sizeof(Quectel_headers) / sizeof(Quectel_headers[0]);
@@ -174,7 +174,7 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
         {
             http.setAuthorization(cfg::user_custom, cfg::pwd_custom);
         }
-        if (logger  == LoggerInflux && (*cfg::user_influx || *cfg::pwd_influx))
+        if (logger == LoggerInflux && (*cfg::user_influx || *cfg::pwd_influx))
         {
             http.setAuthorization(cfg::user_influx, cfg::pwd_influx);
         }
