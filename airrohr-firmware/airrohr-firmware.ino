@@ -696,15 +696,7 @@ void setup(void)
 		Serial.println("Attempting to setup GSM connection");
 
 		pinMode(QUECTEL_PWR_KEY, OUTPUT);
-		// pinMode(9, OUTPUT);
-		// // digitalWrite(16, HIGH);
-		// // delay(1000);
-		// // pinMode(16, OUTPUT);
-		// // digitalWrite(16, LOW);
-		// // delay(2500);
-		// // pinMode(16, OUTPUT);
-		// // digitalWrite(16, HIGH);
-		// digitalWrite(9, LOW);
+		digitalWrite(QUECTEL_PWR_KEY,HIGH);		
 		delay(5000);
 
 		if (!GSM_init(fonaSerial))
@@ -715,10 +707,10 @@ void setup(void)
 			Serial.println();
 		}
 	}
-	if (!GPRS_CONNECTED)
-	{
-		connectWifi();
-	}
+	// if (!GPRS_CONNECTED)
+	// {
+	// 	connectWifi();
+	// }
 	if (cfg::gps_read)
 	{
 #if defined(ESP8266)

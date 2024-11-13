@@ -158,7 +158,7 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 #define FONA_TX D6
 #define FONA_RST D0
 // GSM MODEM
-#define QUECTEL EC200U_CN
+#define QUECTEL 1
 
 // define pins for status LEDs
 #define PMS_LED D3
