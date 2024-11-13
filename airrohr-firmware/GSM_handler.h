@@ -3,14 +3,10 @@
 #include "ext_def.h"
 
 // SoftwareSerial fonaSS(FONA_TX, FONA_RX);
-#define MCU_RXD D5
-#define MCU_TXD D6
-#define QUECTEL_PWR_KEY D0
-#define QUECTEL_DTR D9
-#define QUECTEL_RST D8
-SoftwareSerial fonaSS(MCU_RXD, MCU_TXD); // Testing Quectel Board
+
+SoftwareSerial fonaSS(FONA_RX, FONA_TX); // Testing Quectel Board
 SoftwareSerial *fonaSerial = &fonaSS;
-Adafruit_FONA fona = Adafruit_FONA(QUECTEL_RST);
+Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
 
 char SIM_PIN[5] = GSM_PIN;
 bool GSM_CONNECTED = false;

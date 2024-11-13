@@ -151,6 +151,7 @@ bool sht3x_init_failed = false;
 bool dnms_init_failed = false;
 bool gps_init_failed = false;
 bool airrohr_selftest_failed = false;
+bool gsmIsOn = false;
 
 #include "defines.h"
 #include "./airrohr-cfg.h"
@@ -699,18 +700,23 @@ void setup(void)
 		digitalWrite(QUECTEL_PWR_KEY,HIGH);		
 		delay(5000);
 
-		if (!GSM_init(fonaSerial))
+		while (!GSM_init(fonaSerial))
 		{
 			Serial.println("GSM not fully configured");
 			Serial.print("Failure point: ");
 			Serial.println(GSM_INIT_ERROR);
 			Serial.println();
+
+			digitalWrite(QUECTEL_PWR_KEY, LOW);
+			delay(3000);
+			digitalWrite(QUECTEL_PWR_KEY, HIGH);
+			Serial.println("Restarting Board");
 		}
 	}
-	// if (!GPRS_CONNECTED)
-	// {
-	// 	connectWifi();
-	// }
+	else
+	{
+		connectWifi();
+	}
 	if (cfg::gps_read)
 	{
 #if defined(ESP8266)
@@ -759,6 +765,10 @@ void loop(void)
 	act_milli = millis();
 	send_now = msSince(starttime) > cfg::sending_intervall_ms;
 	// Wait at least 30s for each NTP server to sync
+
+	if(send_now){
+		
+	}
 
 	if (!sntp_time_set && send_now &&
 		msSince(time_point_device_start_ms) < 1000 * 2 * 30 + 5000)
