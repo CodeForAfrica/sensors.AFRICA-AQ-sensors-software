@@ -707,9 +707,9 @@ void setup(void)
 			Serial.println(GSM_INIT_ERROR);
 			Serial.println();
 
-			digitalWrite(QUECTEL_PWR_KEY, LOW);
+			digitalWrite(QUECTEL_PWR_KEY,HIGH );
 			delay(3000);
-			digitalWrite(QUECTEL_PWR_KEY, HIGH);
+			digitalWrite(QUECTEL_PWR_KEY, LOW);
 			Serial.println("Restarting Board");
 		}
 	}
