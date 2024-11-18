@@ -160,12 +160,18 @@ String handle_AT_CMD(String cmd, int _delay)
     }
     String RESPONSE = "";
     fona.println(cmd);
+    int sendStartMillis = millis();
     // delay(_delay); // Avoid putting any code that might delay the receiving all contents from the serial buffer as it is quickly filled up
-
-    while (fona.available() > 0)
+    do
     {
-        RESPONSE += fona.readString();
-    }
+        if (fona.available())
+        {
+            RESPONSE += fona.readString();
+        }
+
+        delay(2);
+    } while (RESPONSE == "" || (millis() - sendStartMillis < _delay));
+
     Serial.println();
     Serial.println("GSM RESPONSE:");
     Serial.println("-------");
@@ -435,27 +441,27 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
     Serial.println(HTTP_CFG);
     // fonaSerial->println(HTTP_CFG);
     String res = handle_AT_CMD(HTTP_CFG);
-    if (res.indexOf("OK") == -1)
-    {
-        HTTP_POST_FAIL += 1;
-        if (HTTP_POST_FAIL > 5)
-        {
-            HTTP_POST_FAIL = 0;
-            GSM_soft_reset();
-        }
-    }
+    // if (res.indexOf("OK") == -1)
+    // {
+    //     HTTP_POST_FAIL += 1;
+    //     if (HTTP_POST_FAIL > 5)
+    //     {
+    //         HTTP_POST_FAIL = 0;
+    //         GSM_soft_reset();
+    //     }
+    // }
     Serial.print("Quectel post body: ");
     Serial.println(data);
     res = handle_AT_CMD(data, 10000);
-    if (res.indexOf("OK") == -1)
-    {
-        HTTP_POST_FAIL += 1;
-        if (HTTP_POST_FAIL > 5)
-        {
-            HTTP_POST_FAIL = 0;
-            GSM_soft_reset();
-        }
-    }
+    // if (res.indexOf("OK") == -1)
+    // {
+    //     HTTP_POST_FAIL += 1;
+    //     if (HTTP_POST_FAIL > 5)
+    //     {
+    //         HTTP_POST_FAIL = 0;
+    //         GSM_soft_reset();
+    //     }
+    // }
 }
 
 // Testing data
