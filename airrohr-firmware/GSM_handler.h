@@ -325,11 +325,10 @@ void GSM_soft_reset()
     fona.enableGPRS(false); // basically shut down GPRS service
 
     if (!fona.sendCheckReply(F("AT+CFUN=1,1"), F("OK")))
-        if (!fona.sendCheckReply(F("AT+CFUN=1,1"), F("OK")))
-        {
-            Serial.println("Soft resetting GSM with full functionality failed!");
-            return;
-        }
+    {
+        Serial.println("Soft resetting GSM with full functionality failed!");
+        return;
+    }
     Serial.println("Soft resetting the GSM module...");
     delay(30000); // wait for GSM to warm up
     // #endif
