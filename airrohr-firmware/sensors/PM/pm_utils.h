@@ -258,6 +258,7 @@ static void fetchSensorPMS(String &s)
         if (is_PMS_running)
         {
             is_PMS_running = PMS_cmd(PmSensorCmd::Stop);
+            Serial.println("Stopping PMS");
         }
     }
     else
@@ -265,6 +266,7 @@ static void fetchSensorPMS(String &s)
         if (!is_PMS_running)
         {
             is_PMS_running = PMS_cmd(PmSensorCmd::Start);
+            Serial.println("Starting PMS");
         }
 
         while (serialSDS.available() > 0)

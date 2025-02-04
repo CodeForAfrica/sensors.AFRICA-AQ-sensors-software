@@ -92,7 +92,7 @@ String SOFTWARE_VERSION(SOFTWARE_VERSION_STR);
 #include <DNSServer.h>
 #include <SPI.h>
 #include <StreamString.h>
-#include <Adafruit_FONA.h>
+#include "lib/Adafruit_Fona/Adafruit_FONA.h"
 
 // display funtion declarations
 static void init_display();
@@ -226,6 +226,7 @@ float last_value_HTU21D_T = -128.0;
 float last_value_HTU21D_H = -1.0;
 float last_value_SHT3X_T = -128.0;
 float last_value_SHT3X_H = -1.0;
+int sendStatus = 0;
 
 uint32_t sds_pm10_sum = 0;
 uint32_t sds_pm25_sum = 0;
@@ -235,6 +236,8 @@ uint32_t sds_pm10_min = 20000;
 uint32_t sds_pm25_max = 0;
 uint32_t sds_pm25_min = 20000;
 
+int diff = 0;
+int prevDiff = 0;
 int pms_pm1_sum = 0;
 int pms_pm10_sum = 0;
 int pms_pm25_sum = 0;
@@ -527,6 +530,12 @@ void switch_status_LEDs_off(uint8_t LED, bool off_state)
 	digitalWrite(LED, LOW);
 }
 
+void pwrkeyfn(){
+	digitalWrite(QUECTEL_PWR_KEY, 1);
+	delay(4000);
+	digitalWrite(QUECTEL_PWR_KEY, 0);
+	delay(10000);
+}
 static void powerOnTestSensors()
 {
 	if (cfg::ppd_read)
@@ -696,6 +705,17 @@ void setup(void)
 		Serial.println("Attempting to setup GSM connection");
 
 		pinMode(QUECTEL_PWR_KEY, OUTPUT);
+		pinMode(QUECTEL_DTR, OUTPUT);
+		pinMode(FONA_RST, OUTPUT);
+
+		digitalWrite(FONA_RST, HIGH);
+		digitalWrite(QUECTEL_DTR, LOW);
+
+		digitalWrite(QUECTEL_PWR_KEY, HIGH);
+		delay(4000);
+		digitalWrite(QUECTEL_PWR_KEY, LOW);
+        delay(4000);
+
 		// pinMode(9, OUTPUT);
 		// // digitalWrite(16, HIGH);
 		// // delay(1000);
@@ -715,10 +735,10 @@ void setup(void)
 			Serial.println();
 		}
 	}
-	if (!GPRS_CONNECTED)
-	{
-		connectWifi();
-	}
+	// if (!GPRS_CONNECTED)
+	// {
+	// 	connectWifi();
+	// }
 	if (cfg::gps_read)
 	{
 #if defined(ESP8266)
@@ -751,6 +771,10 @@ void setup(void)
 	starttime = millis(); // store the start time
 	last_update_attempt = time_point_device_start_ms = starttime;
 	last_display_millis = starttime_SDS = starttime;
+
+	WiFi.forceSleepBegin();  // Put WiFi into sleep mode
+	delay(1);                // Small delay to ensure it's processed
+
 }
 
 /*****************************************************************
@@ -758,6 +782,25 @@ void setup(void)
  *****************************************************************/
 void loop(void)
 {
+	// Serial.println(millis() - starttime);
+	// Serial.println(cfg::sending_intervall_ms);
+
+	
+	diff = millis() - starttime;
+	diff = diff *100;
+	diff = (diff/ cfg::sending_intervall_ms);
+	// Serial.println(diff);
+	if(diff % 5 == 0 && diff != prevDiff){
+		Serial.print("=> " + String(diff) + "%");
+		prevDiff = diff;
+	}
+
+	if(sendStatus == 0 && cfg::sending_intervall_ms - (millis() - starttime) <= 20000){
+		sendStatus = 1;
+		pwrkeyfn();
+		GSM_init(fonaSerial);
+	}
+	// Serial.println("Looping.....");
 	String result_PPD, result_SDS, result_PMS, result_HPM;
 	String result_GPS, result_DNMS;
 
@@ -775,12 +818,12 @@ void loop(void)
 		send_now = false;
 		starttime = act_milli;
 	}
-
+	
 	sample_count++;
 
-#if defined(ESP8266)
-	wdt_reset(); // nodemcu is alive
-#endif
+	#if defined(ESP8266)
+		wdt_reset(); // nodemcu is alive
+	#endif
 
 	if (last_micro != 0)
 	{
@@ -850,7 +893,8 @@ void loop(void)
 		fetchSensorPPD(result_PPD);
 	}
 
-	if ((msSince(starttime_SDS) > SAMPLETIME_SDS_MS) || send_now)
+	// if ((msSince(starttime_SDS) > SAMPLETIME_SDS_MS) || send_now)
+	if (send_now)
 	{
 		starttime_SDS = act_milli;
 		if (cfg::sds_read)
@@ -1033,6 +1077,9 @@ void loop(void)
 		{
 			debug_outln_info(F("Time for Sending (ms): "), String(sending_time));
 		}
+
+		sendStatus = 0;
+		pwrkeyfn();
 
 		// reconnect to WiFi if disconnected
 		/*if (WiFi.status() != WL_CONNECTED) {

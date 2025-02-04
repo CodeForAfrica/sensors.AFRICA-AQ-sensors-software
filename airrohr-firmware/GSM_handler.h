@@ -1,13 +1,10 @@
 #include <SoftwareSerial.h>
-#include <Adafruit_FONA.h>
+#include "lib/Adafruit_Fona/Adafruit_FONA.h"
 #include "ext_def.h"
 
-// SoftwareSerial fonaSS(FONA_TX, FONA_RX);
-#define MCU_RXD D5
-#define MCU_TXD D6
-#define QUECTEL_PWR_KEY D8
-#define QUECTEL_DTR D9
-SoftwareSerial fonaSS(MCU_RXD, MCU_TXD); // Testing Quectel Board
+SoftwareSerial fonaSS(FONA_RX, FONA_TX);
+
+// SoftwareSerial fonaSS(MCU_RXD, MCU_TXD); // Testing Quectel Board
 SoftwareSerial *fonaSerial = &fonaSS;
 Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
 
@@ -360,6 +357,11 @@ void restart_GSM()
         Serial.print("Failure point: ");
         Serial.println(GSM_INIT_ERROR);
         Serial.println();
+
+		digitalWrite(QUECTEL_PWR_KEY, HIGH);
+		delay(4000);
+		digitalWrite(QUECTEL_PWR_KEY, LOW);
+        delay(4000);
     }
 }
 

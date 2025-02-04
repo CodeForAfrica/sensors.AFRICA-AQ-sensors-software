@@ -38,7 +38,7 @@ const char WWW_PASSWORD[] PROGMEM = "feinstaub";
 #define SSL_CFA 0
 #define SEND2SENSORCOMMUNITY 0
 #define SSL_SENSORCOMMUNITY 0
-#define SEND2MADAVI 1
+#define SEND2MADAVI 0
 #define SSL_MADAVI 0
 #define SEND2SENSEMAP 0
 #define SEND2FSAPP 0
@@ -138,20 +138,10 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 // TX (transmitting) pin on one side goes to RX (receiving) pin on other side
 // SoftSerial RX PIN is D1 and goes to SDS TX
 // SoftSerial TX PIN is D2 and goes to SDS RX
-#define PM_SERIAL_RX D1
-#define PM_SERIAL_TX D2
 
-// define pins for I2C
-#define I2C_PIN_SCL D1
-#define I2C_PIN_SDA D2
 
-// define serial interface pins for GPS modules
-#define GPS_SERIAL_RX D3
-#define GPS_SERIAL_TX D4
-
-// PPD42NS, the cheaper version of the particle sensor
-#define PPD_PIN_PM1 GPS_SERIAL_TX
-#define PPD_PIN_PM2 GPS_SERIAL_RX
+#define QUECTEL_PWR_KEY D0
+#define QUECTEL_DTR D9
 
 // GSM
 #define FONA_RX D5
@@ -160,11 +150,27 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 // GSM MODEM
 #define QUECTEL EC200U_CN
 
+#define PM_SERIAL_RX D1
+#define PM_SERIAL_TX D2
+
+// define pins for I2C
+#define I2C_PIN_SCL A0
+#define I2C_PIN_SDA A0
+
 // define pins for status LEDs
 #define PMS_LED D3
 #define DHT_LED D4
-#endif
 
+
+// define serial interface pins for GPS modules
+#define GPS_SERIAL_RX A0
+#define GPS_SERIAL_TX A0
+
+// PPD42NS, the cheaper version of the particle sensor
+#define PPD_PIN_PM1 GPS_SERIAL_TX
+#define PPD_PIN_PM2 GPS_SERIAL_RX
+
+#endif
 // pin assignments for Arduino SAMD Zero board
 #if defined(ARDUINO_SAMD_ZERO)
 #define ONEWIRE_PIN D7

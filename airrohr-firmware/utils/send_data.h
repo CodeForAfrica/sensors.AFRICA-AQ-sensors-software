@@ -70,10 +70,11 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
             GPRS_INIT_FAIL_COUNT += 1;
             Serial.print("GPRS INIT FAIL COUNT: ");
             Serial.println(GPRS_INIT_FAIL_COUNT);
-            if (GPRS_INIT_FAIL_COUNT == 5)
+            if (GPRS_INIT_FAIL_COUNT == 2)
             { //! RESET COUNTER
                 GPRS_INIT_FAIL_COUNT = 0;
                 GSM_soft_reset();
+                restart_GSM();
                 GSM_init(fonaSerial);
             }
         }
