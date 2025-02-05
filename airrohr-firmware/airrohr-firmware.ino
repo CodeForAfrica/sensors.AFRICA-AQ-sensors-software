@@ -404,6 +404,31 @@ static void yield_for_serial_buffer(size_t length)
 	}
 }
 
+
+void powerOnGsm(){
+	while (!GSM_init(fonaSerial))
+		{
+			Serial.println("GSM not fully configured");
+			Serial.print("Failure point: ");
+			Serial.println(GSM_INIT_ERROR);
+			Serial.println();
+			if((GSM_INIT_ERROR) == "Could not find GSM module"){
+				Serial.println("GSM is Off/ not connected...");
+				pwrkeyfn();
+			}
+			else if(GSM_INIT_ERROR == "Failed to config GPRS PDP context"){
+				Serial.println("GSM Connected but Failed to connect to gprs...");
+				return;
+			}
+
+			else if(GSM_INIT_ERROR == "Could not register to network"){
+				Serial.println("GSM Connected but No Network");
+				return;
+			}
+			else return;
+			
+		}
+}
 /*****************************************************************
  * Prepare information for data Loggers                          *
  *****************************************************************/
@@ -711,29 +736,9 @@ void setup(void)
 		digitalWrite(FONA_RST, HIGH);
 		digitalWrite(QUECTEL_DTR, LOW);
 
-		digitalWrite(QUECTEL_PWR_KEY, HIGH);
-		delay(4000);
-		digitalWrite(QUECTEL_PWR_KEY, LOW);
-        delay(4000);
-
-		// pinMode(9, OUTPUT);
-		// // digitalWrite(16, HIGH);
-		// // delay(1000);
-		// // pinMode(16, OUTPUT);
-		// // digitalWrite(16, LOW);
-		// // delay(2500);
-		// // pinMode(16, OUTPUT);
-		// // digitalWrite(16, HIGH);
-		// digitalWrite(9, LOW);
 		delay(5000);
 
-		if (!GSM_init(fonaSerial))
-		{
-			Serial.println("GSM not fully configured");
-			Serial.print("Failure point: ");
-			Serial.println(GSM_INIT_ERROR);
-			Serial.println();
-		}
+		powerOnGsm();
 	}
 	// if (!GPRS_CONNECTED)
 	// {
@@ -795,10 +800,10 @@ void loop(void)
 		prevDiff = diff;
 	}
 
-	if(sendStatus == 0 && cfg::sending_intervall_ms - (millis() - starttime) <= 20000){
+	if(sendStatus == 0 && cfg::sending_intervall_ms - (millis() - starttime) <= 40000){
 		sendStatus = 1;
 		pwrkeyfn();
-		GSM_init(fonaSerial);
+		powerOnGsm();
 	}
 	// Serial.println("Looping.....");
 	String result_PPD, result_SDS, result_PMS, result_HPM;
