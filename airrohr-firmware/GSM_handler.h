@@ -89,7 +89,7 @@ bool GSM_init(SoftwareSerial *gsm_serial)
     int retry_count = 0;
     while (!registered_to_network && retry_count < 10)
     {
-        if (fona.getNetworkStatus() == 1)
+        if (fona.getNetworkStatus() == 1 || 5)
             registered_to_network = true;
 
         retry_count++;
