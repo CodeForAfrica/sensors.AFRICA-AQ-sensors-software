@@ -5,7 +5,7 @@
 // SoftwareSerial fonaSS(FONA_TX, FONA_RX);
 #define MCU_RXD D5
 #define MCU_TXD D6
-#define QUECTEL_PWR_KEY D8
+#define QUECTEL_PWR_KEY D0
 #define QUECTEL_DTR D9
 SoftwareSerial fonaSS(MCU_RXD, MCU_TXD); // Testing Quectel Board
 SoftwareSerial *fonaSerial = &fonaSS;
@@ -40,14 +40,13 @@ bool GSM_init(SoftwareSerial *gsm_serial)
 { // Pass a ptr to SoftwareSerial GSM instance
     gsm_serial->begin(115200);
     String error_msg = "";
+
     // Check if there is serial communication with a GSM module
     /* if (!fona.begin(*gsm_serial)) */
-    fona.begin(*gsm_serial);
-    // digitalWrite(QUECTEL_PWR_KEY, LOW);
-    // delay(3000);
-    // digitalWrite(QUECTEL_PWR_KEY, HIGH);
-    // delay(5000);
-    if (!fona.sendCheckReply(F("AT"), F("OK")))
+    // fona.begin(*gsm_serial);
+
+    // if (!fona.sendCheckReply(F("AT"), F("OK")))
+    if (!fona.begin(*gsm_serial))
     {
         error_msg = "Could not find GSM module";
         GSM_INIT_ERROR = error_msg;
@@ -67,30 +66,37 @@ bool GSM_init(SoftwareSerial *gsm_serial)
         return false;
     }
 
-    // SIM setup
-    Serial.println("SIM card available");
-    Serial.println("Setting up SIM..");
+    // // SIM setup
+    // Serial.println("SIM card available");
+    // Serial.println("Setting up SIM..");
 
-    SIM_PIN_Setup();
+    // SIM_PIN_Setup();
 
-    if (!SIM_PIN_SET)
-    {
-        error_msg = "Unable to set SIM PIN";
-        GSM_INIT_ERROR = error_msg;
-        Serial.println(error_msg);
+    // if (!SIM_PIN_SET)
+    // {
+    //     error_msg = "Unable to set SIM PIN";
+    //     GSM_INIT_ERROR = error_msg;
+    //     Serial.println(error_msg);
 
-        return false;
-    }
+    //     return false;
+    // }
     // Set if SIM is usable flag
     SIM_USABLE = true;
 
     // Register to network
     bool registered_to_network = false;
     int retry_count = 0;
-    while (!registered_to_network && retry_count < 10)
+    while (!registered_to_network && retry_count < 20)
     {
-        if (fona.getNetworkStatus() == 1 || 5)
+        uint8_t netstatus = fona.getNetworkStatus();
+        Serial.print("Network Status: ");
+        Serial.println((String)netstatus);
+        if ((netstatus == 1) || netstatus == 5)
+        {
+            Serial.print("Connected to network");
             registered_to_network = true;
+            break;
+        }
 
         retry_count++;
         delay(3000);
@@ -110,15 +116,15 @@ bool GSM_init(SoftwareSerial *gsm_serial)
     // fona.setGPRSNetworkSettings(F(GPRS_APN), F(GPRS_USERNAME), F(GPRS_PASSWORD));
 
     // Attempt to enable GPRS
-    Serial.println("Attempting to enable GPRS");
-    // delay(2000);
+    // Serial.println("Attempting to enable GPRS");
+    // // delay(2000);
 
-    if (!GPRS_init())
-        return false;
+    // if (!GPRS_init())
+    //     return false;
 
-    Serial.println("GPRS enabled!");
+    // Serial.println("GPRS enabled!");
 
-    GPRS_CONNECTED = true;
+    // GPRS_CONNECTED = true;
     // ToDo: Attempt to do a ping test to determine whether we can communicate with the internet
 
     return true;
@@ -222,25 +228,44 @@ void SIM_PIN_Setup()
 
 bool is_SIMCID_valid() // ! Seems to be returning true even when there is "ERROR" in response
 {
-    // char res[30];
-    // fona.getSIMCCID(res);
-    // Serial.println(res);
-    // String ccid = String(res);
-    String ccid = handle_AT_CMD("AT+CCID");
-    if (ccid.indexOf("ERROR") > -1) // Means string has the word error
+    char qccid[30];
+
+    int timeout = 5000;
+    Serial.print("Getting SIM CCID ");
+    while (!fona.getSIMCCID(qccid) && timeout > 0)
     {
-        SIM_AVAILABLE = false;
-        return false;
+        Serial.print(".");
+        timeout -= 1000;
+        delay(1000);
     }
 
-    else
+    if ((String)qccid != "")
     {
-        // strcpy(SIM_CID, res);
-        SIM_AVAILABLE = true;
-        Serial.print("SIM CCID: ");
-        Serial.println(ccid);
+
+        Serial.println(qccid);
         return true;
     }
+    else
+    {
+        return false;
+    }
+    // String ccid = String(res);
+    // String ccid = handle_AT_CMD("AT+QCCID", 10000);
+    // if (ccid.indexOf("ERROR") > -1) // Means string has the word error
+    // {
+    //     SIM_AVAILABLE = false;
+    //     SIM_AVAILABLE = true;
+    //     return false;
+    // }
+
+    // else
+    // {
+    //     // strcpy(SIM_CID, res);
+    //     SIM_AVAILABLE = true;
+    //     Serial.print("SIM CCID: ");
+    //     Serial.println(ccid);
+    //     return true;
+    // }
 }
 
 // Similar to FONA enableGPRS() but quicker because APN setting are not configured as it is configured during GSM_init()
@@ -257,38 +282,99 @@ bool GPRS_init()
     //     GPRS_CONNECTED = false;
     //     return GPRS_CONNECTED;
     // }
-    if (fona.sendCheckReply(F("AT+CGATT?"), F("0"))) // equivalent to fona.GPRSstate()
-    {
-        if (!fona.sendCheckReply(F("AT+CGATT=1"), F("OK"), 3000))
-        {
-            err = "Failed to attach GPRS service";
-            GSM_INIT_ERROR = err;
-            Serial.println(err);
-            GPRS_CONNECTED = false;
-            return GPRS_CONNECTED;
-        }
-    }
+
+    // if (fona.sendCheckReply(F("AT+CGATT?"), F("0"))) // equivalent to fona.GPRSstate()
+    // {
+    //     if (!fona.sendCheckReply(F("AT+CGATT=1"), F("OK"), 3000))
+    //     {
+    //         err = "Failed to attach GPRS service";
+    //         GSM_INIT_ERROR = err;
+    //         Serial.println(err);
+    //         GPRS_CONNECTED = false;
+    //         return GPRS_CONNECTED;
+    //     }
+    // }
 
 #ifdef QUECTEL
     Serial.println("Quectel GPRS init...");
 
-    if (!fona.sendCheckReply(F("AT+QICSGP=1,1"), F("OK"), 3000))
+    int timeout = 5000;
+    Serial.print("COnfiguring PDP context ");
+    bool PDP_config = false;
+    while (timeout > 0)
+    {
+        PDP_config = fona.sendCheckReply(F("AT+QICSGP=1,1"), F("OK"));
+        if (PDP_config)
+        {
+            Serial.println("PDP context set");
+            break;
+        }
+        Serial.print(".");
+        timeout -= 1000;
+        delay(2000);
+    }
+
+    if (!PDP_config)
     {
         err = "Failed to config GPRS PDP context";
         GSM_INIT_ERROR = err;
         Serial.println(err);
-        GPRS_CONNECTED = false;
-        return GPRS_CONNECTED;
+        return false;
     }
 
-    if (!fona.sendCheckReply(F("AT+QIACT=1"), F("OK"), 3000))
+    // if (!fona.sendCheckReply(F("AT+QICSGP=1,1"), F("OK"), 3000))
+    // {
+    //     err = "Failed to config GPRS PDP context";
+    //     GSM_INIT_ERROR = err;
+    //     Serial.println(err);
+    //     GPRS_CONNECTED = false;
+    //     return GPRS_CONNECTED;
+    // }
+
+    timeout = 5000;
+
+    // bool CGATT=false;
+    while (timeout > 0)
     {
-        err = "Failed to activate GPRS PDP context";
-        GSM_INIT_ERROR = err;
-        Serial.println(err);
-        GPRS_CONNECTED = false;
-        return GPRS_CONNECTED;
+        bool is_cgatt_detached = fona.sendCheckReply(F("AT+CGATT?"), F("0"));
+        if (is_cgatt_detached)
+        {
+            Serial.println("Attempting to attache CGATT");
+
+            int cgatt_timeout = 5000;
+
+            while (cgatt_timeout > 0)
+            {
+                GPRS_CONNECTED = fona.sendCheckReply(F("AT+CGATT=1"), F("OK"), 3000);
+                if (GPRS_CONNECTED)
+                {
+                    Serial.println("CGATT attached");
+                    break;
+                }
+
+                Serial.print(".");
+                timeout -= 1000;
+                delay(2000);
+            }
+        }
+        else
+        {
+            break;
+        }
+
+        Serial.print(".");
+        timeout -= 1000;
+        delay(2000);
     }
+
+    // if (!fona.sendCheckReply(F("AT+QIACT=1"), F("OK"), 3000))
+    // {
+    //     err = "Failed to activate GPRS PDP context";
+    //     GSM_INIT_ERROR = err;
+    //     Serial.println(err);
+    //     GPRS_CONNECTED = false;
+    //     return GPRS_CONNECTED;
+    // }
 
 #else
     String res = handle_AT_CMD("AT+SAPBR=1,1"); // Enable GPRS

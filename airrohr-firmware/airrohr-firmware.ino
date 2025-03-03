@@ -682,11 +682,11 @@ void setup(void)
 		SOFTWARE_VERSION += F("-STF");
 	}
 	logEnabledAPIs();
-	logEnabledDisplays();
+	// logEnabledDisplays();
 	init_config();
-	init_display();
-	init_lcd();
-	setup_webserver();
+	// init_display();
+	// init_lcd();
+	// setup_webserver();
 	createLoggerConfigs();
 	debug_outln_info(F("\nChipId: "), esp_chipid);
 
@@ -696,15 +696,7 @@ void setup(void)
 		Serial.println("Attempting to setup GSM connection");
 
 		pinMode(QUECTEL_PWR_KEY, OUTPUT);
-		// pinMode(9, OUTPUT);
-		// // digitalWrite(16, HIGH);
-		// // delay(1000);
-		// // pinMode(16, OUTPUT);
-		// // digitalWrite(16, LOW);
-		// // delay(2500);
-		// // pinMode(16, OUTPUT);
-		// // digitalWrite(16, HIGH);
-		// digitalWrite(9, LOW);
+		digitalWrite(QUECTEL_PWR_KEY, HIGH);
 		delay(5000);
 
 		if (!GSM_init(fonaSerial))
@@ -714,11 +706,24 @@ void setup(void)
 			Serial.println(GSM_INIT_ERROR);
 			Serial.println();
 		}
+		else
+		{
+			// GPRS init
+			bool gprs_init = GPRS_init();
+			if (!gprs_init)
+			{
+				Serial.println("Failed to init GPRS");
+			}
+			else
+			{
+				Serial.println("GPRS initialized!");
+			}
+		}
 	}
-	if (!GPRS_CONNECTED)
-	{
-		connectWifi();
-	}
+	// if (!GPRS_CONNECTED)
+	// {
+	// 	connectWifi();
+	// }
 	if (cfg::gps_read)
 	{
 #if defined(ESP8266)
@@ -768,13 +773,13 @@ void loop(void)
 	send_now = msSince(starttime) > cfg::sending_intervall_ms;
 	// Wait at least 30s for each NTP server to sync
 
-	if (!sntp_time_set && send_now &&
-		msSince(time_point_device_start_ms) < 1000 * 2 * 30 + 5000)
-	{
-		debug_outln_info(F("NTP sync not finished yet, skipping send"));
-		send_now = false;
-		starttime = act_milli;
-	}
+	// if (!sntp_time_set && send_now &&
+	// 	msSince(time_point_device_start_ms) < 1000 * 2 * 30 + 5000)
+	// {
+	// 	debug_outln_info(F("NTP sync not finished yet, skipping send"));
+	// 	send_now = false;
+	// 	starttime = act_milli;
+	// }
 
 	sample_count++;
 
@@ -801,11 +806,11 @@ void loop(void)
 		sensor_restart();
 	}
 
-	if (msSince(last_update_attempt) > PAUSE_BETWEEN_UPDATE_ATTEMPTS_MS)
-	{
-		twoStageOTAUpdate();
-		last_update_attempt = act_milli;
-	}
+	// if (msSince(last_update_attempt) > PAUSE_BETWEEN_UPDATE_ATTEMPTS_MS)
+	// {
+	// 	twoStageOTAUpdate();
+	// 	last_update_attempt = act_milli;
+	// }
 
 	if (cfg::sps30_read && (!sps30_init_failed))
 	{
