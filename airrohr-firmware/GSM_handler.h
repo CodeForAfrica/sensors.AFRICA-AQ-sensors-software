@@ -17,12 +17,14 @@ bool SIM_AVAILABLE = false;
 bool GPRS_CONNECTED = false;
 bool SIM_PIN_SET = false;
 bool SIM_USABLE = false;
+uint16_t CGATT_status;
 char SIM_CID[21] = "";
 String GSM_INIT_ERROR = "";
 String NETWORK_NAME = "";
 
 /**** Function Declacrations **/
 bool GSM_init(SoftwareSerial *gsm_serial);
+bool register_to_network();
 static void unlock_pin(char *PIN);
 String handle_AT_CMD(String cmd, int _delay = 1000);
 void SIM_PIN_Setup();
@@ -32,6 +34,7 @@ void GSM_soft_reset();
 void restart_GSM();
 void enableGPRS();
 void flushSerial();
+void SerialFlush();
 void QUECTEL_POST(char *url, String headers[], int header_size, const String &data, int data_length);
 int GPRS_INIT_FAIL_COUNT = 0;
 int HTTP_POST_FAIL = 0;
@@ -55,7 +58,7 @@ bool GSM_init(SoftwareSerial *gsm_serial)
         return false;
     }
 
-    Serial.print("GSM module found!");
+    Serial.println("GSM module found!");
 
     // Check if SIM is inserted
     if (!is_SIMCID_valid())
@@ -66,8 +69,6 @@ bool GSM_init(SoftwareSerial *gsm_serial)
         return false;
     }
 
-    // // SIM setup
-    // Serial.println("SIM card available");
     // Serial.println("Setting up SIM..");
 
     // SIM_PIN_Setup();
@@ -83,7 +84,13 @@ bool GSM_init(SoftwareSerial *gsm_serial)
     // Set if SIM is usable flag
     SIM_USABLE = true;
 
-    // Register to network
+    return true;
+}
+
+bool register_to_network()
+{
+
+    String error_msg = "";
     bool registered_to_network = false;
     int retry_count = 0;
     while (!registered_to_network && retry_count < 20)
@@ -100,6 +107,7 @@ bool GSM_init(SoftwareSerial *gsm_serial)
 
         retry_count++;
         delay(3000);
+        SerialFlush();
     }
 
     if (!registered_to_network)
@@ -111,22 +119,6 @@ bool GSM_init(SoftwareSerial *gsm_serial)
     }
 
     fona.sendCheckReply(F("AT+COPS?"), F("OK"));
-
-    // Set GPRS APN details
-    // fona.setGPRSNetworkSettings(F(GPRS_APN), F(GPRS_USERNAME), F(GPRS_PASSWORD));
-
-    // Attempt to enable GPRS
-    // Serial.println("Attempting to enable GPRS");
-    // // delay(2000);
-
-    // if (!GPRS_init())
-    //     return false;
-
-    // Serial.println("GPRS enabled!");
-
-    // GPRS_CONNECTED = true;
-    // ToDo: Attempt to do a ping test to determine whether we can communicate with the internet
-
     return true;
 }
 
@@ -241,9 +233,10 @@ bool is_SIMCID_valid() // ! Seems to be returning true even when there is "ERROR
 
     if ((String)qccid != "")
     {
-
+        Serial.print("SIM card available. CCID: ");
         Serial.println(qccid);
-        return true;
+        SIM_AVAILABLE = true;
+        return SIM_AVAILABLE;
     }
     else
     {
@@ -299,7 +292,7 @@ bool GPRS_init()
     Serial.println("Quectel GPRS init...");
 
     int timeout = 5000;
-    Serial.print("COnfiguring PDP context ");
+    Serial.print("Configuring PDP context ");
     bool PDP_config = false;
     while (timeout > 0)
     {
@@ -322,50 +315,56 @@ bool GPRS_init()
         return false;
     }
 
-    // if (!fona.sendCheckReply(F("AT+QICSGP=1,1"), F("OK"), 3000))
-    // {
-    //     err = "Failed to config GPRS PDP context";
-    //     GSM_INIT_ERROR = err;
-    //     Serial.println(err);
-    //     GPRS_CONNECTED = false;
-    //     return GPRS_CONNECTED;
-    // }
+    // Check CGATT status
+    Serial.println("\nChecking CGATT Status..");
+    fona.sendParseReply(F("AT+CGATT?"), F("+CGATT: "), &CGATT_status, ' ', 1);
+    Serial.println("CGATT_status: " + CGATT_status);
 
-    timeout = 5000;
-
-    // bool CGATT=false;
-    while (timeout > 0)
+    // Attach CGATT
+    if (CGATT_status != 1)
     {
-        bool is_cgatt_detached = fona.sendCheckReply(F("AT+CGATT?"), F("0"));
-        if (is_cgatt_detached)
+
+        GPRS_CONNECTED = fona.sendCheckReply(F("AT+CGATT=1"), F("OK"), 5000);
+        if (fona.sendParseReply(F("AT+CGATT?"), F("+CGATT: "), &CGATT_status, ' ', 1))
         {
-            Serial.println("Attempting to attache CGATT");
-
-            int cgatt_timeout = 5000;
-
-            while (cgatt_timeout > 0)
-            {
-                GPRS_CONNECTED = fona.sendCheckReply(F("AT+CGATT=1"), F("OK"), 3000);
-                if (GPRS_CONNECTED)
-                {
-                    Serial.println("CGATT attached");
-                    break;
-                }
-
-                Serial.print(".");
-                timeout -= 1000;
-                delay(2000);
-            }
+            Serial.println("CGATT status set to: " + CGATT_status);
         }
-        else
-        {
-            break;
-        }
-
-        Serial.print(".");
-        timeout -= 1000;
-        delay(2000);
     }
+
+    // timeout = 5000;
+    //  bool CGATT=false;
+    //  while (timeout > 0)
+    //  {
+    //      bool is_cgatt_detached = fona.sendCheckReply(F("AT+CGATT?"), F("0"), 5000); // !! NOT PARSING AS EXPECTED
+    //      if (is_cgatt_detached)
+    //      {
+    //          Serial.println("Attempting to attache CGATT");
+
+    //         int cgatt_timeout = 5000;
+
+    //         while (cgatt_timeout > 0)
+    //         {
+    //             GPRS_CONNECTED = fona.sendCheckReply(F("AT+CGATT=1"), F("OK"), 3000);
+    //             if (GPRS_CONNECTED)
+    //             {
+    //                 Serial.println("CGATT attached");
+    //                 break;
+    //             }
+
+    //             Serial.print(".");
+    //             timeout -= 1000;
+    //             delay(2000);
+    //         }
+    //     }
+    //     else
+    //     {
+    //         break;
+    //     }
+
+    //     Serial.print(".");
+    //     timeout -= 1000;
+    //     delay(2000);
+    // }
 
     // if (!fona.sendCheckReply(F("AT+QIACT=1"), F("OK"), 3000))
     // {
@@ -389,7 +388,6 @@ bool GPRS_init()
     }
 #endif
 
-    GPRS_CONNECTED = true;
     return GPRS_CONNECTED;
 }
 
@@ -571,3 +569,11 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
 // http://staging.api.sensors.africa/v1/push-sensor-data/
 // AT+QHTTPPOST=385,30,60
 // AT+QHTTPREAD
+
+void SerialFlush()
+{
+    while (Serial.available())
+    {
+        Serial.read();
+    }
+}

@@ -641,7 +641,7 @@ static void powerOnTestSensors()
 void setup(void)
 {
 
-	Serial.begin(9600); // Output to Serial at 9600 baud
+	Serial.begin(74880); // Output to Serial at 9600 baud
 
 #if defined(ESP8266)
 	serialSDS.begin(9600, SWSERIAL_8N1, PM_SERIAL_RX, PM_SERIAL_TX);
@@ -674,7 +674,8 @@ void setup(void)
 #endif
 	cfg::initNonTrivials(esp_chipid.c_str());
 	WiFi.persistent(false);
-
+	SerialFlush();
+	delay(3000);
 	debug_outln_info(F("airRohr: " SOFTWARE_VERSION_STR "/"), String(CURRENT_LANG));
 	if ((airrohr_selftest_failed = !ESP.checkFlashConfig(true) /* after 2.7.0 update: || !ESP.checkFlashCRC() */))
 	{
@@ -699,25 +700,30 @@ void setup(void)
 		digitalWrite(QUECTEL_PWR_KEY, HIGH);
 		delay(5000);
 
-		if (!GSM_init(fonaSerial))
+		while (!GSM_init(fonaSerial))
 		{
 			Serial.println("GSM not fully configured");
 			Serial.print("Failure point: ");
 			Serial.println(GSM_INIT_ERROR);
 			Serial.println();
 		}
+		GSM_CONNECTED = true;
+
+		while (!register_to_network())
+		{
+			Serial.println("Retrying network registeration...");
+		}
+
+		// GPRS init
+
+		GPRS_CONNECTED = GPRS_init();
+		if (!GPRS_CONNECTED)
+		{
+			Serial.println("Failed to init GPRS");
+		}
 		else
 		{
-			// GPRS init
-			bool gprs_init = GPRS_init();
-			if (!gprs_init)
-			{
-				Serial.println("Failed to init GPRS");
-			}
-			else
-			{
-				Serial.println("GPRS initialized!");
-			}
+			Serial.println("GPRS initialized!");
 		}
 	}
 	// if (!GPRS_CONNECTED)
@@ -1069,4 +1075,5 @@ void loop(void)
 	{
 		//		Serial.println(ESP.getFreeHeap(),DEC);
 	}
+	SerialFlush();
 }
