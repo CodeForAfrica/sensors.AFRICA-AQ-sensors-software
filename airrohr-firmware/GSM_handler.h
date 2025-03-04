@@ -22,6 +22,12 @@ char SIM_CID[21] = "";
 String GSM_INIT_ERROR = "";
 String NETWORK_NAME = "";
 
+#ifdef QUECTEL
+int HTTPCFG_CONNECT_FAIL = 0;
+#endif
+
+uint16_t HTTPOST_RESPONSE_STATUS;
+
 /**** Function Declacrations **/
 bool GSM_init(SoftwareSerial *gsm_serial);
 bool register_to_network();
@@ -317,18 +323,23 @@ bool GPRS_init()
 
     // Check CGATT status
     Serial.println("\nChecking CGATT Status..");
-    fona.sendParseReply(F("AT+CGATT?"), F("+CGATT: "), &CGATT_status, ' ', 1);
-    Serial.println("CGATT_status: " + CGATT_status);
+    fona.sendParseReply(F("AT+CGATT?"), F("+CGATT:"), &CGATT_status, ' ', 1);
+    Serial.println("CGATT_status: " + (String)CGATT_status);
 
     // Attach CGATT
     if (CGATT_status != 1)
     {
 
         GPRS_CONNECTED = fona.sendCheckReply(F("AT+CGATT=1"), F("OK"), 5000);
-        if (fona.sendParseReply(F("AT+CGATT?"), F("+CGATT: "), &CGATT_status, ' ', 1))
+        delay(2000);
+        if (!fona.sendParseReply(F("AT+CGATT?"), F("+CGATT:"), &CGATT_status, ' ', 1))
         {
-            Serial.println("CGATT status set to: " + CGATT_status);
+            Serial.println("CGATT status set to: " + (String)CGATT_status); // !! sometimes not reached when using if statement. delay needed
         }
+    }
+    else
+    {
+        GPRS_CONNECTED = true;
     }
 
     // timeout = 5000;
@@ -416,14 +427,6 @@ void GSM_soft_reset()
     Serial.println("Soft resetting the GSM module...");
     delay(30000); // wait for GSM to warm up
     // #endif
-
-    // if (!GSM_init(fonaSerial))
-    // {
-    //     Serial.println("GSM not fully configured");
-    //     Serial.print("Failure point: ");
-    //     Serial.println(GSM_INIT_ERROR);
-    //     Serial.println();
-    // }
 }
 
 /***
@@ -520,31 +523,35 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
     }
 
     // POST data
-    HTTP_CFG = "AT+QHTTPPOST=" + String(data_length) + ",30,60";
-    Serial.println(HTTP_CFG);
-    // fonaSerial->println(HTTP_CFG);
-    String res = handle_AT_CMD(HTTP_CFG);
-    // if (res.indexOf("OK") == -1)
-    // {
-    //     HTTP_POST_FAIL += 1;
-    //     if (HTTP_POST_FAIL > 5)
-    //     {
-    //         HTTP_POST_FAIL = 0;
-    //         GSM_soft_reset();
-    //     }
-    // }
-    Serial.print("Quectel post body: ");
-    Serial.println(data);
-    res = handle_AT_CMD(data, 10000);
-    // if (res.indexOf("OK") == -1)
-    // {
-    //     HTTP_POST_FAIL += 1;
-    //     if (HTTP_POST_FAIL > 5)
-    //     {
-    //         HTTP_POST_FAIL = 0;
-    //         GSM_soft_reset();
-    //     }
-    // }
+    // HTTP_CFG = "AT+QHTTPPOST=" + String(data_length) + ",30,60";
+    char http_post_prepare[32] = "AT+QHTTPPOST=";
+    char data_len[4];
+    itoa(data_length, data_len, 10);
+    strcat(http_post_prepare, data_len);
+    strcat(http_post_prepare, ",30,60");
+
+    // Serial.println(HTTP_CFG);
+    // String res = handle_AT_CMD(HTTP_CFG);
+    Serial.println(http_post_prepare);
+    if (fona.sendCheckReply(http_post_prepare, F("CONNECT"), 3000))
+    {
+        Serial.print("Quectel post body: ");
+        Serial.println(data);
+        handle_AT_CMD(data, 10000);
+    }
+    else
+    {
+        Serial.println("HTTP POST CONNECT FAIL");
+        HTTPCFG_CONNECT_FAIL += 1;
+
+        // !! Troubleshoot;
+        if (HTTPCFG_CONNECT_FAIL > 5)
+        {
+
+            GSM_soft_reset();
+            GPRS_init();
+        }
+    }
 }
 
 // Testing data

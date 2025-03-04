@@ -641,7 +641,7 @@ static void powerOnTestSensors()
 void setup(void)
 {
 
-	Serial.begin(74880); // Output to Serial at 9600 baud
+	Serial.begin(9600); // Output to Serial at 9600 baud
 
 #if defined(ESP8266)
 	serialSDS.begin(9600, SWSERIAL_8N1, PM_SERIAL_RX, PM_SERIAL_TX);
@@ -716,8 +716,7 @@ void setup(void)
 
 		// GPRS init
 
-		GPRS_CONNECTED = GPRS_init();
-		if (!GPRS_CONNECTED)
+		if (!GPRS_init())
 		{
 			Serial.println("Failed to init GPRS");
 		}
