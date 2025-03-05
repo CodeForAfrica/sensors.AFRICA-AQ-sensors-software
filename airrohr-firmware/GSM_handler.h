@@ -643,7 +643,8 @@ char get_raw_response(const char *cmd, char *res_buff, unsigned long timeout)
     flushSerial();
     delay(100);
     Serial.print("Received Command in get raw: ");
-    size_t arr_size = 255;
+    size_t arr_size = sizeof(res_buff);
+    Serial.println("Size of response buffer" + arr_size);
     memset(res_buff, '\0', arr_size);
     int buff_pos = 0;
     Serial.print(cmd);
@@ -676,4 +677,46 @@ char get_raw_response(const char *cmd, char *res_buff, unsigned long timeout)
     Serial.println("-------");
 
     return *res_buff;
+}
+
+/***
+    @brief : Extract a piece of text matching the target from a char array
+    @param input : The char array that contains the string to be parsed from
+    @param target : Ocuurence of a particular string
+    @param _until : The first character matching to read from after finding occurence of the target
+    @param output : A char array to store extracted string
+    @return
+****/
+bool extractText(char *input, char *target, char _until, char *output)
+{
+
+    const char *found_target = strstr(input, target);
+
+    if (found_target != nullptr)
+    {
+        // Find the start of the HTTP status code
+        const char *start = found_target + strlen(target);
+
+        // Find the end of the HTTP status code (the next comma)
+        const char *end = strchr(start, _until);
+
+        if (end != nullptr)
+        {
+            // Calculate the length of the status code
+            size_t length = end - start;
+
+            // Copy the status code to the output array
+            if (length < sizeof(output))
+            { // check for buffer overflow.
+                strncpy(output, start, length);
+                output[length] = '\0'; // Null-terminate the string
+                return true;
+            }
+            else
+            {
+                return false; // status code too long
+            }
+        }
+    }
+    return false; // Target not found or status code not found
 }
