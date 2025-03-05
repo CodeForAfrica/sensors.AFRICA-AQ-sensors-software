@@ -46,7 +46,7 @@ void flushSerial();
 void SerialFlush();
 void QUECTEL_POST(char *url, String headers[], int header_size, const String &data, int data_length);
 bool extractText(char *input, const char *target, char *output, char _until = ','); // ? should go to utils
-char get_raw_response(const char *cmd, char *res_buff, unsigned long timeout = 3000);
+char get_raw_response(const char *cmd, char *res_buff, size_t buff_size, unsigned long timeout = 3000);
 void troubleshoot_GSM();
 
 // Set a decent delay before this to warm up the GSM module
@@ -533,6 +533,7 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
     }
 
     char HTTP_RESPONSE[255];
+    size_t BUFFER_SIZE = sizeof(HTTP_RESPONSE);
     char HTTP_POST_RESPONSE_STATUS[4];
     const char *data_copy = data.c_str();
     char gprs_data[strlen(data_copy)];
@@ -553,7 +554,7 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
     if (fona.sendCheckReply(http_post_prepare, F("CONNECT"), 3000))
     {
         Serial.print("Quectel post body: ");
-        get_raw_response(gprs_data, HTTP_RESPONSE, 10000);
+        get_raw_response(gprs_data, HTTP_RESPONSE, BUFFER_SIZE, 10000);
     }
     else
     {
@@ -615,27 +616,21 @@ void SerialFlush()
     }
 }
 
-char get_raw_response(const char *cmd, char *res_buff, unsigned long timeout)
+char get_raw_response(const char *cmd, char *res_buff, size_t buff_size, unsigned long timeout)
 {
 
     flushSerial();
     delay(100);
+    memset(res_buff, '\0', buff_size);
+    Serial.println("Size of response buffer" + buff_size);
+    size_t buff_pos = 0;
     Serial.print("Received Command in get raw: ");
-    size_t arr_size = sizeof(res_buff);
-    Serial.println("Size of response buffer" + arr_size);
-    memset(res_buff, '\0', arr_size);
-    int buff_pos = 0;
     Serial.print(cmd);
     fona.println(cmd);
     unsigned long sendStartMillis = millis();
     do
     {
-        // if (fona.available())
-        // {
-        //     fonaSS.readBytes(res_buff, arr_size - 1);
-        //     break;
-        // }
-        if (buff_pos == arr_size) // Check if buff is full
+        if (buff_pos == buff_size) // Check if buff is full
             break;
 
         while (fona.available())
@@ -644,7 +639,7 @@ char get_raw_response(const char *cmd, char *res_buff, unsigned long timeout)
             res_buff[buff_pos] = fona.read();
             buff_pos++;
 
-            if (buff_pos == arr_size)
+            if (buff_pos == buff_size)
                 break;
         }
 

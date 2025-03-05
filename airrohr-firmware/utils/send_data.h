@@ -56,14 +56,7 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
 
     if (!GPRS_CONNECTED)
     {
-        // if (!GPRS_init())
-        // {
 
-        // 	if (SIM_USABLE)
-        // 	{
-        // 		GSM_soft_reset();
-        // 	}
-        // }
         if (!GPRS_init())
             return 0;
     }
