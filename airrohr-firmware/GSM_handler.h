@@ -42,6 +42,7 @@ void enableGPRS();
 void flushSerial();
 void SerialFlush();
 void QUECTEL_POST(char *url, String headers[], int header_size, const String &data, int data_length);
+bool extractText(char *input, const char *target, char _until = ',', char *output); // ? should go to utils
 char get_raw_response(const char *cmd, char *res_buff, unsigned long timeout = 3000);
 int GPRS_INIT_FAIL_COUNT = 0;
 int HTTP_POST_FAIL = 0;
@@ -559,50 +560,28 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
             GPRS_init();
             HTTPCFG_CONNECT_FAIL = 0;
         }
+        return;
     }
 
     // Check HTTP RESPONSE status
     const char *expected_reply = "+QHTTPPOST: 0,"; // Operartion successful
 
-    char *found_expected_reply = strstr(HTTP_RESPONSE, expected_reply);
-
-    if (found_expected_reply != NULL)
+    if (extractText(HTTP_RESPONSE, expected_reply, ',', HTTP_POST_RESPONSE_STATUS))
     {
-        int position_found = found_expected_reply - HTTP_RESPONSE;
-        Serial.print("Substring found at position: ");
-        Serial.println(position_found);
-
-        // Start of the HTTP status code
-        const char *start = found_expected_reply + strlen(expected_reply);
-
-        // Find the end of the HTTP status code (the next comma)
-        const char *end = strchr(start, ',');
-
-        if (end != nullptr)
+        if (strstr(HTTP_POST_RESPONSE_STATUS, "20"))
         {
-            // Calculate the length of the status code
-            size_t length = end - start;
-
-            // Copy the status code to the output array
-            if (length < 4)
-            { // check for buffer overflow, assume max 3 digit code.
-
-                strncpy(HTTP_POST_RESPONSE_STATUS, start, length);
-
-                HTTP_POST_RESPONSE_STATUS[length] = '\0'; // Null-terminate the string
-
-                Serial.print("HTTP POST REPSONSE STATUS: ");
-                Serial.println(HTTP_POST_RESPONSE_STATUS);
-            }
-            else
-            {
-                Serial.println("HHTP status code too long");
-            }
+            Serial.println("Requested processed successfully with status: " + (String)HTTP_POST_RESPONSE_STATUS);
+        }
+        else
+        {
+            Serial.println("Requested processing failed with status: " + (String)HTTP_POST_RESPONSE_STATUS);
+            HTTP_POST_FAIL += 1;
         }
     }
     else
     {
-        Serial.println("Substring not found.");
+        Serial.println("Could not extract HTTP response status code");
+        //? Maybe troubleshoot
     }
 }
 
@@ -687,13 +666,17 @@ char get_raw_response(const char *cmd, char *res_buff, unsigned long timeout)
     @param output : A char array to store extracted string
     @return
 ****/
-bool extractText(char *input, char *target, char _until, char *output)
+bool extractText(char *input, const char *target, char _until, char *output)
 {
 
     const char *found_target = strstr(input, target);
 
     if (found_target != nullptr)
     {
+
+        Serial.print("Substring found at position: ");
+        Serial.println(found_target - input);
+
         // Find the start of the HTTP status code
         const char *start = found_target + strlen(target);
 
@@ -718,5 +701,6 @@ bool extractText(char *input, char *target, char _until, char *output)
             }
         }
     }
+    Serial.println("Could not extact substring '" + (String)target + "' from the source");
     return false; // Target not found or status code not found
 }
