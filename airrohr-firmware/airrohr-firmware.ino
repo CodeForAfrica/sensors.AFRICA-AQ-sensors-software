@@ -768,6 +768,14 @@ void setup(void)
  *****************************************************************/
 void loop(void)
 {
+	if (cfg::gsm_capable)
+	{
+
+		if (HTTPCFG_CONNECT_FAIL > 5 || HTTP_POST_FAIL > 5 || GPRS_INIT_FAIL_COUNT > 5)
+		{
+			troubleshoot_GSM();
+		}
+	}
 	String result_PPD, result_SDS, result_PMS, result_HPM;
 	String result_GPS, result_DNMS;
 

@@ -22,9 +22,12 @@ char SIM_CID[21] = "";
 String GSM_INIT_ERROR = "";
 String NETWORK_NAME = "";
 
+// FAIL FLAGS
 #ifdef QUECTEL
 int HTTPCFG_CONNECT_FAIL = 0;
 #endif
+int GPRS_INIT_FAIL_COUNT = 0;
+int HTTP_POST_FAIL = 0;
 
 uint16_t HTTPOST_RESPONSE_STATUS;
 
@@ -42,10 +45,10 @@ void enableGPRS();
 void flushSerial();
 void SerialFlush();
 void QUECTEL_POST(char *url, String headers[], int header_size, const String &data, int data_length);
-bool extractText(char *input, const char *target, char _until = ',', char *output); // ? should go to utils
+bool extractText(char *input, const char *target, char *output, char _until = ','); // ? should go to utils
 char get_raw_response(const char *cmd, char *res_buff, unsigned long timeout = 3000);
-int GPRS_INIT_FAIL_COUNT = 0;
-int HTTP_POST_FAIL = 0;
+void troubleshoot_GSM();
+
 // Set a decent delay before this to warm up the GSM module
 bool GSM_init(SoftwareSerial *gsm_serial)
 { // Pass a ptr to SoftwareSerial GSM instance
@@ -334,6 +337,7 @@ bool GPRS_init()
 
         GPRS_CONNECTED = fona.sendCheckReply(F("AT+CGATT=1"), F("OK"), 5000);
         delay(2000);
+
         if (!fona.sendParseReply(F("AT+CGATT?"), F("+CGATT:"), &CGATT_status, ' ', 1))
         {
             Serial.println("CGATT status set to: " + (String)CGATT_status); // !! sometimes not reached when using if statement. delay needed
@@ -401,6 +405,10 @@ bool GPRS_init()
     }
 #endif
 
+    if (!GPRS_CONNECTED)
+    {
+        GPRS_INIT_FAIL_COUNT += 1;
+    }
     return GPRS_CONNECTED;
 }
 
@@ -551,22 +559,13 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
     {
         Serial.println("HTTP POST CONNECT FAIL");
         HTTPCFG_CONNECT_FAIL += 1;
-
-        // !! Troubleshoot;
-        if (HTTPCFG_CONNECT_FAIL > 5)
-        {
-
-            GSM_soft_reset();
-            GPRS_init();
-            HTTPCFG_CONNECT_FAIL = 0;
-        }
         return;
     }
 
     // Check HTTP RESPONSE status
     const char *expected_reply = "+QHTTPPOST: 0,"; // Operartion successful
 
-    if (extractText(HTTP_RESPONSE, expected_reply, ',', HTTP_POST_RESPONSE_STATUS))
+    if (extractText(HTTP_RESPONSE, expected_reply, HTTP_POST_RESPONSE_STATUS, ','))
     {
         if (strstr(HTTP_POST_RESPONSE_STATUS, "20"))
         {
@@ -662,11 +661,11 @@ char get_raw_response(const char *cmd, char *res_buff, unsigned long timeout)
     @brief : Extract a piece of text matching the target from a char array
     @param input : The char array that contains the string to be parsed from
     @param target : Ocuurence of a particular string
-    @param _until : The first character matching to read from after finding occurence of the target
     @param output : A char array to store extracted string
+    @param _until : The first character matching to read from after finding occurence of the target
     @return
 ****/
-bool extractText(char *input, const char *target, char _until, char *output)
+bool extractText(char *input, const char *target, char *output, char _until)
 {
 
     const char *found_target = strstr(input, target);
@@ -703,4 +702,20 @@ bool extractText(char *input, const char *target, char _until, char *output)
     }
     Serial.println("Could not extact substring '" + (String)target + "' from the source");
     return false; // Target not found or status code not found
+}
+
+// Simple function to troubleshoot GSM //? More to be done
+void troubleshoot_GSM()
+{
+
+    GSM_init(fonaSerial); // Use GSM soft reset if GSM reset pin is not connected
+
+    !register_to_network();
+
+    GPRS_init();
+
+    // RESET FLAGS
+    HTTPCFG_CONNECT_FAIL = 0;
+    HTTP_POST_FAIL = 0;
+    GPRS_INIT_FAIL_COUNT = 0;
 }

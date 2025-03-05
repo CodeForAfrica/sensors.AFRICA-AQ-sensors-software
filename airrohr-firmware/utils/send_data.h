@@ -65,18 +65,7 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
         // 	}
         // }
         if (!GPRS_init())
-        {
-
-            GPRS_INIT_FAIL_COUNT += 1;
-            Serial.print("GPRS INIT FAIL COUNT: ");
-            Serial.println(GPRS_INIT_FAIL_COUNT);
-            if (GPRS_INIT_FAIL_COUNT == 5)
-            { //! RESET COUNTER
-                GPRS_INIT_FAIL_COUNT = 0;
-                GSM_soft_reset();
-                GSM_init(fonaSerial);
-            }
-        }
+            return 0;
     }
     if (GPRS_CONNECTED)
     {
