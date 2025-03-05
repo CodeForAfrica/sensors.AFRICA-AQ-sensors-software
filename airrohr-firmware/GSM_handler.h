@@ -28,6 +28,7 @@ int HTTPCFG_CONNECT_FAIL = 0;
 #endif
 int GPRS_INIT_FAIL_COUNT = 0;
 int HTTP_POST_FAIL = 0;
+int REGISTER_TO_NETWORK_FAIL = 0;
 
 uint16_t HTTPOST_RESPONSE_STATUS;
 
@@ -56,10 +57,6 @@ bool GSM_init(SoftwareSerial *gsm_serial)
     String error_msg = "";
 
     // Check if there is serial communication with a GSM module
-    /* if (!fona.begin(*gsm_serial)) */
-    // fona.begin(*gsm_serial);
-
-    // if (!fona.sendCheckReply(F("AT"), F("OK")))
     if (!fona.begin(*gsm_serial))
     {
         error_msg = "Could not find GSM module";
@@ -126,6 +123,13 @@ bool register_to_network()
         error_msg = "Could not register to network";
         GSM_INIT_ERROR = error_msg;
         Serial.println(error_msg);
+        REGISTER_TO_NETWORK_FAIL += 1;
+
+        if (REGISTER_TO_NETWORK_FAIL > 5)
+        {
+            GSM_soft_reset();
+            REGISTER_TO_NETWORK_FAIL = 0;
+        }
         return false;
     }
 
@@ -193,28 +197,6 @@ String handle_AT_CMD(String cmd, int _delay)
 void SIM_PIN_Setup()
 {
 
-    // String res = handle_AT_CMD("AT+CPIN?");
-    // int start_index = res.indexOf(":");
-    // res = res.substring(start_index + 1);
-    // res.trim();
-    // Serial.print("PIN STATUS: ");
-    // Serial.println(res);
-    // if (res.startsWith("READY"))
-    // {
-    //     SIM_PIN_SET = true;
-    //     return;
-    // }
-
-    // else if (res.startsWith("SIM PIN"))
-    // {
-    //     unlock_pin(SIM_PIN);
-    //     return;
-    // }
-    // else if (res.startsWith("SIM PUK"))
-    // { // ToDo: Attempt to set PUK;
-    //     return;
-    // }
-
     if (fona.sendCheckReply(F("AT+CPIN?"), F("+CPIN: READY"), 3000))
     {
         Serial.println("SIM PIN READY");
@@ -226,6 +208,7 @@ void SIM_PIN_Setup()
     {
         Serial.println("SIM PIN NOT SET");
         return;
+        // ToDO:Set PIN
     }
 }
 
@@ -253,23 +236,6 @@ bool is_SIMCID_valid() // ! Seems to be returning true even when there is "ERROR
     {
         return false;
     }
-    // String ccid = String(res);
-    // String ccid = handle_AT_CMD("AT+QCCID", 10000);
-    // if (ccid.indexOf("ERROR") > -1) // Means string has the word error
-    // {
-    //     SIM_AVAILABLE = false;
-    //     SIM_AVAILABLE = true;
-    //     return false;
-    // }
-
-    // else
-    // {
-    //     // strcpy(SIM_CID, res);
-    //     SIM_AVAILABLE = true;
-    //     Serial.print("SIM CCID: ");
-    //     Serial.println(ccid);
-    //     return true;
-    // }
 }
 
 // Similar to FONA enableGPRS() but quicker because APN setting are not configured as it is configured during GSM_init()
@@ -277,27 +243,6 @@ bool GPRS_init()
 {
 
     String err = "";
-
-    // if (!fona.sendCheckReply(F("AT+CGATT=1"), F("OK"), 10000))
-    // {
-    //     err = "Failed to attach GPRS service";
-    //     GSM_INIT_ERROR = err;
-    //     Serial.println(err);
-    //     GPRS_CONNECTED = false;
-    //     return GPRS_CONNECTED;
-    // }
-
-    // if (fona.sendCheckReply(F("AT+CGATT?"), F("0"))) // equivalent to fona.GPRSstate()
-    // {
-    //     if (!fona.sendCheckReply(F("AT+CGATT=1"), F("OK"), 3000))
-    //     {
-    //         err = "Failed to attach GPRS service";
-    //         GSM_INIT_ERROR = err;
-    //         Serial.println(err);
-    //         GPRS_CONNECTED = false;
-    //         return GPRS_CONNECTED;
-    //     }
-    // }
 
 #ifdef QUECTEL
     Serial.println("Quectel GPRS init...");
@@ -347,41 +292,6 @@ bool GPRS_init()
     {
         GPRS_CONNECTED = true;
     }
-
-    // timeout = 5000;
-    //  bool CGATT=false;
-    //  while (timeout > 0)
-    //  {
-    //      bool is_cgatt_detached = fona.sendCheckReply(F("AT+CGATT?"), F("0"), 5000); // !! NOT PARSING AS EXPECTED
-    //      if (is_cgatt_detached)
-    //      {
-    //          Serial.println("Attempting to attache CGATT");
-
-    //         int cgatt_timeout = 5000;
-
-    //         while (cgatt_timeout > 0)
-    //         {
-    //             GPRS_CONNECTED = fona.sendCheckReply(F("AT+CGATT=1"), F("OK"), 3000);
-    //             if (GPRS_CONNECTED)
-    //             {
-    //                 Serial.println("CGATT attached");
-    //                 break;
-    //             }
-
-    //             Serial.print(".");
-    //             timeout -= 1000;
-    //             delay(2000);
-    //         }
-    //     }
-    //     else
-    //     {
-    //         break;
-    //     }
-
-    //     Serial.print(".");
-    //     timeout -= 1000;
-    //     delay(2000);
-    // }
 
     // if (!fona.sendCheckReply(F("AT+QIACT=1"), F("OK"), 3000))
     // {
@@ -585,29 +495,6 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
     }
 }
 
-// Testing data
-// http://staging.api.sensors.africa/v1/push-sensor-data/
-
-// POST /v1/push-sensor-data/\r\nHost: http://staging.api.sensors.africa\r\nAccept: */*\r\nUser-Agent: QUECTEL EC200\r\nContent-Type: application/json\r\nX-Sensor: esp8266-15355455\r\nX-PIN: 1\r\nContent-Length: 385\r\n\r\n{"software_version": "NRZ-2020-129", "sensordatavalues":[{"value_type":"P0","value":"7.80"},{"value_type":"P1","value":"10.50"},{"value_type":"P2","value":"13.40"}]}\r\n
-// data length 252
-
-// Accept: */*\r\nUser-Agent: QUECTEL EC200\r\nContent-Type: application/json\r\nX-Sensor: esp8266-15355455\r\nX-PIN: 1\r\nContent-Length: 165\r\n\r\n{"software_version": "NRZ-2020-129", "sensordatavalues":[{"value_type":"P0","value":"7.80"},{"value_type":"P1","value":"10.50"},{"value_type":"P2","value":"13.40"}]}\r\n
-/// 1234
-
-// AT commands sequence
-
-// AT+CGATT=1
-// AT+QICSGP=1,1,"safaricom","saf","data"
-// AT+QIACT=1
-// AT+QIACT?
-// AT+QHTTPCFG="contextid",1
-// AT+QHTTPCFG="requestheader",1
-// AT+QHTTPCFG="responseheader",1
-// AT+QHTTPURL=54,30,60
-// http://staging.api.sensors.africa/v1/push-sensor-data/
-// AT+QHTTPPOST=385,30,60
-// AT+QHTTPREAD
-
 void SerialFlush()
 {
     while (Serial.available())
@@ -653,13 +540,13 @@ char get_raw_response(const char *cmd, char *res_buff, size_t buff_size, unsigne
 }
 
 /***
-    @brief : Extract a piece of text matching the target from a char array
-    @param input : The char array that contains the string to be parsed from
-    @param target : Ocuurence of a particular string
-    @param output : A char array to store extracted string
-    @param _until : The first character matching to read from after finding occurence of the target
-    @return
-****/
+ @brief : Extract a piece of text matching the target from a char array
+ @param input : The char array that contains the string to be parsed from
+ @param target : Ocuurence of a particular string
+ @param output : A char array to store extracted string
+ @param _until : The first character matching to read from after finding occurence of the target
+ @return
+ ****/
 bool extractText(char *input, const char *target, char *output, char _until)
 {
 
@@ -714,3 +601,26 @@ void troubleshoot_GSM()
     HTTP_POST_FAIL = 0;
     GPRS_INIT_FAIL_COUNT = 0;
 }
+
+// Testing POST data
+// http://staging.api.sensors.africa/v1/push-sensor-data/
+
+// POST /v1/push-sensor-data/\r\nHost: http://staging.api.sensors.africa\r\nAccept: */*\r\nUser-Agent: QUECTEL EC200\r\nContent-Type: application/json\r\nX-Sensor: esp8266-15355455\r\nX-PIN: 1\r\nContent-Length: 385\r\n\r\n{"software_version": "NRZ-2020-129", "sensordatavalues":[{"value_type":"P0","value":"7.80"},{"value_type":"P1","value":"10.50"},{"value_type":"P2","value":"13.40"}]}\r\n
+// data length 252
+
+// Accept: */*\r\nUser-Agent: QUECTEL EC200\r\nContent-Type: application/json\r\nX-Sensor: esp8266-15355455\r\nX-PIN: 1\r\nContent-Length: 165\r\n\r\n{"software_version": "NRZ-2020-129", "sensordatavalues":[{"value_type":"P0","value":"7.80"},{"value_type":"P1","value":"10.50"},{"value_type":"P2","value":"13.40"}]}\r\n
+/// 1234
+
+// AT commands sequence
+
+// AT+CGATT=1
+// AT+QICSGP=1,1,"safaricom","saf","data"
+// AT+QIACT=1
+// AT+QIACT?
+// AT+QHTTPCFG="contextid",1
+// AT+QHTTPCFG="requestheader",1
+// AT+QHTTPCFG="responseheader",1
+// AT+QHTTPURL=54,30,60
+// http://staging.api.sensors.africa/v1/push-sensor-data/
+// AT+QHTTPPOST=385,30,60
+// AT+QHTTPREAD
