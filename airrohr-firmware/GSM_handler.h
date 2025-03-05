@@ -42,6 +42,7 @@ void enableGPRS();
 void flushSerial();
 void SerialFlush();
 void QUECTEL_POST(char *url, String headers[], int header_size, const String &data, int data_length);
+char get_raw_response(const char *cmd, char *res_buff, unsigned long timeout = 3000);
 int GPRS_INIT_FAIL_COUNT = 0;
 int HTTP_POST_FAIL = 0;
 // Set a decent delay before this to warm up the GSM module
@@ -522,6 +523,12 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
         handle_AT_CMD(HTTP_CFG);
     }
 
+    char HTTP_RESPONSE[255];
+    char HTTP_POST_RESPONSE_STATUS[4];
+    const char *data_copy = data.c_str();
+    char gprs_data[strlen(data_copy)];
+    strcpy(gprs_data, data_copy);
+
     // POST data
     // HTTP_CFG = "AT+QHTTPPOST=" + String(data_length) + ",30,60";
     char http_post_prepare[32] = "AT+QHTTPPOST=";
@@ -532,12 +539,12 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
 
     // Serial.println(HTTP_CFG);
     // String res = handle_AT_CMD(HTTP_CFG);
+
     Serial.println(http_post_prepare);
     if (fona.sendCheckReply(http_post_prepare, F("CONNECT"), 3000))
     {
         Serial.print("Quectel post body: ");
-        Serial.println(data);
-        handle_AT_CMD(data, 10000);
+        get_raw_response(gprs_data, HTTP_RESPONSE, 10000);
     }
     else
     {
@@ -550,7 +557,52 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
 
             GSM_soft_reset();
             GPRS_init();
+            HTTPCFG_CONNECT_FAIL = 0;
         }
+    }
+
+    // Check HTTP RESPONSE status
+    const char *expected_reply = "+QHTTPPOST: 0,"; // Operartion successful
+
+    char *found_expected_reply = strstr(HTTP_RESPONSE, expected_reply);
+
+    if (found_expected_reply != NULL)
+    {
+        int position_found = found_expected_reply - HTTP_RESPONSE;
+        Serial.print("Substring found at position: ");
+        Serial.println(position_found);
+
+        // Start of the HTTP status code
+        const char *start = found_expected_reply + strlen(expected_reply);
+
+        // Find the end of the HTTP status code (the next comma)
+        const char *end = strchr(start, ',');
+
+        if (end != nullptr)
+        {
+            // Calculate the length of the status code
+            size_t length = end - start;
+
+            // Copy the status code to the output array
+            if (length < 4)
+            { // check for buffer overflow, assume max 3 digit code.
+
+                strncpy(HTTP_POST_RESPONSE_STATUS, start, length);
+
+                HTTP_POST_RESPONSE_STATUS[length] = '\0'; // Null-terminate the string
+
+                Serial.print("HTTP POST REPSONSE STATUS: ");
+                Serial.println(HTTP_POST_RESPONSE_STATUS);
+            }
+            else
+            {
+                Serial.println("HHTP status code too long");
+            }
+        }
+    }
+    else
+    {
+        Serial.println("Substring not found.");
     }
 }
 
@@ -583,4 +635,45 @@ void SerialFlush()
     {
         Serial.read();
     }
+}
+
+char get_raw_response(const char *cmd, char *res_buff, unsigned long timeout)
+{
+
+    flushSerial();
+    delay(100);
+    Serial.print("Received Command in get raw: ");
+    size_t arr_size = 255;
+    memset(res_buff, '\0', arr_size);
+    int buff_pos = 0;
+    Serial.print(cmd);
+    fona.println(cmd);
+    unsigned long sendStartMillis = millis();
+    do
+    {
+        // if (fona.available())
+        // {
+        //     fonaSS.readBytes(res_buff, arr_size - 1);
+        //     break;
+        // }
+        if (buff_pos == arr_size) // Check if buff is full
+            break;
+
+        while (fona.available())
+        {
+
+            res_buff[buff_pos] = fona.read();
+            buff_pos++;
+
+            if (buff_pos == arr_size)
+                break;
+        }
+
+        delay(2);
+    } while (strlen(res_buff) == 0 || (millis() - sendStartMillis < timeout));
+    Serial.println("\n-------\nGSM RAW RESPONSE:\n");
+    Serial.println(res_buff);
+    Serial.println("-------");
+
+    return *res_buff;
 }
