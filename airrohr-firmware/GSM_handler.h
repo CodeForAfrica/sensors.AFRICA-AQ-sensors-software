@@ -103,6 +103,7 @@ bool register_to_network()
     int retry_count = 0;
     while (!registered_to_network && retry_count < 20)
     {
+
         uint8_t netstatus = fona.getNetworkStatus();
         Serial.print("Network Status: ");
         Serial.println((String)netstatus);
@@ -120,14 +121,22 @@ bool register_to_network()
 
     if (!registered_to_network)
     {
-        error_msg = "Could not register to network";
+        error_msg = "Network not registered";
         GSM_INIT_ERROR = error_msg;
         Serial.println(error_msg);
         REGISTER_TO_NETWORK_FAIL += 1;
 
+        // Attempt to enable network registration
+
+        if (!fona.sendCheckReply(F("AT+CREG=2"), F("OK")))
+        {
+            Serial.println("Manual network registration failed.");
+        }
+
         if (REGISTER_TO_NETWORK_FAIL > 5)
         {
             GSM_soft_reset();
+            //? Check if the SIM card is still there?
             REGISTER_TO_NETWORK_FAIL = 0;
         }
         return false;
@@ -590,9 +599,9 @@ bool extractText(char *input, const char *target, char *output, char _until)
 void troubleshoot_GSM()
 {
 
-    GSM_init(fonaSerial); // Use GSM soft reset if GSM reset pin is not connected
+    GSM_init(fonaSerial); // ! Use GSM soft reset if GSM reset pin is not connected
 
-    !register_to_network();
+    register_to_network();
 
     GPRS_init();
 
