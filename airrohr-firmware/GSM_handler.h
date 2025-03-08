@@ -46,7 +46,7 @@ void enableGPRS();
 void flushSerial();
 void SerialFlush();
 void QUECTEL_POST(char *url, String headers[], int header_size, const String &data, int data_length);
-bool extractText(char *input, const char *target, char *output, char _until = ','); // ? should go to utils
+bool extractText(char *input, const char *target, char *output, uint8_t output_size, char _until); // ? should go to utils
 char get_raw_response(const char *cmd, char *res_buff, size_t buff_size, unsigned long timeout = 3000);
 int16_t getNumber(char *AT_cmd, char *expected_reply, uint8_t index_from, uint8_t length);
 void troubleshoot_GSM();
@@ -500,7 +500,7 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
     // Check HTTP RESPONSE status
     const char *expected_reply = "+QHTTPPOST: 0,"; // Operartion successful
 
-    if (extractText(HTTP_RESPONSE, expected_reply, HTTP_POST_RESPONSE_STATUS, ','))
+    if (extractText(HTTP_RESPONSE, expected_reply, HTTP_POST_RESPONSE_STATUS, 4, ','))
     {
         if (strstr(HTTP_POST_RESPONSE_STATUS, "20"))
         {
@@ -580,7 +580,7 @@ char get_raw_response(const char *cmd, char *res_buff, size_t buff_size, unsigne
  @param _until : The first character matching to read from after finding occurence of the target
  @return
  ****/
-bool extractText(char *input, const char *target, char *output, char _until)
+bool extractText(char *input, const char *target, char *output, uint8_t output_size, char _until)
 {
 
     const char *found_target = strstr(input, target);
@@ -591,21 +591,18 @@ bool extractText(char *input, const char *target, char *output, char _until)
         Serial.print("Substring found at position: ");
         Serial.println(found_target - input);
 
-        // Find the start of the HTTP status code
+        // Find the start of the extraction point
         const char *start = found_target + strlen(target);
 
-        // Find the end of the HTTP status code (the next comma)
+        // Find the end of the extraction point (the next comma by default)
         const char *end = strchr(start, _until);
 
         if (end != nullptr)
         {
-            // Calculate the length of the status code
+            // Calculate the length of the text to be extracted
             size_t length = end - start;
 
-            // Copy the status code to the output array
-            size_t sizeofoutput = sizeof(output);
-            Serial.println("Size of output: " + (String)sizeofoutput);
-            if (length < sizeof(output))
+            if (length < output_size)
             { // check for buffer overflow.
                 strncpy(output, start, length);
                 output[length] = '\0'; // Null-terminate the string
@@ -613,12 +610,13 @@ bool extractText(char *input, const char *target, char *output, char _until)
             }
             else
             {
-                return false; // status code too long
+                Serial.println("Extracted piece of text longer than ouput size");
+                return false;
             }
         }
     }
     Serial.println("Could not extact substring '" + (String)target + "' from the source");
-    return false; // Target not found or status code not found
+    return false;
 }
 
 // extract an integer
