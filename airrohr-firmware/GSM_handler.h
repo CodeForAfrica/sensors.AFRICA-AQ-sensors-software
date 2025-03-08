@@ -48,6 +48,7 @@ void SerialFlush();
 void QUECTEL_POST(char *url, String headers[], int header_size, const String &data, int data_length);
 bool extractText(char *input, const char *target, char *output, char _until = ','); // ? should go to utils
 char get_raw_response(const char *cmd, char *res_buff, size_t buff_size, unsigned long timeout = 3000);
+int16_t getNumber(char *AT_cmd, char *expected_reply, uint8_t index_from, uint8_t length);
 void troubleshoot_GSM();
 
 // Set a decent delay before this to warm up the GSM module
@@ -101,22 +102,38 @@ bool register_to_network()
     String error_msg = "";
     bool registered_to_network = false;
     int retry_count = 0;
+    char NET_RESPONSE[64];
+    size_t buff_size = sizeof(NET_RESPONSE);
     while (!registered_to_network && retry_count < 20)
     {
 
-        uint8_t netstatus = fona.getNetworkStatus();
-        Serial.print("Network Status: ");
-        Serial.println((String)netstatus);
-        if ((netstatus == 1) || netstatus == 5)
+        // uint8_t netstatus = fona.getNetworkStatus();
+        // Serial.print("Network Status: ");
+        // Serial.println((String)netstatus);
+        // if ((netstatus == 1) || netstatus == 5)
+        // {
+        //     Serial.print("Connected to network");
+        //     registered_to_network = true;
+        //     break;
+        // }
+
+        int8_t status = getNumber("AT+CREG?", "+CREG: ", 2, 1);
+
+        if (status == 1 || status == 5)
         {
-            Serial.print("Connected to network");
             registered_to_network = true;
             break;
+        }
+
+        else
+        {
+            Serial.println("Not registered to network ");
         }
 
         retry_count++;
         delay(3000);
         SerialFlush();
+        flushSerial();
     }
 
     if (!registered_to_network)
@@ -128,7 +145,7 @@ bool register_to_network()
 
         // Attempt to enable network registration
 
-        if (!fona.sendCheckReply(F("AT+CREG=2"), F("OK")))
+        if (!fona.sendCheckReply(F("AT+CREG=1"), F("OK")))
         {
             Serial.println("Manual network registration failed.");
         }
@@ -176,10 +193,8 @@ static void unlock_pin(char *PIN)
 
 String handle_AT_CMD(String cmd, int _delay)
 {
-    while (Serial.available() > 0)
-    {
-        Serial.read();
-    }
+    SerialFlush();
+    flushSerial();
     String RESPONSE = "";
     fona.println(cmd);
     int sendStartMillis = millis();
@@ -199,7 +214,7 @@ String handle_AT_CMD(String cmd, int _delay)
     Serial.println("-------");
     Serial.print(RESPONSE);
     Serial.println("-----");
-
+    SerialFlush();
     return RESPONSE;
 }
 
@@ -257,7 +272,7 @@ bool GPRS_init()
     Serial.println("Quectel GPRS init...");
 
     int timeout = 5000;
-    Serial.print("Configuring PDP context ");
+    Serial.println("Configuring PDP context ");
     bool PDP_config = false;
     while (timeout > 0)
     {
@@ -472,7 +487,7 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
     Serial.println(http_post_prepare);
     if (fona.sendCheckReply(http_post_prepare, F("CONNECT"), 3000))
     {
-        Serial.print("Quectel post body: ");
+        Serial.println("Posting gprs data..");
         get_raw_response(gprs_data, HTTP_RESPONSE, BUFFER_SIZE, 10000);
     }
     else
@@ -506,6 +521,7 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
 
 void SerialFlush()
 {
+    // Serial.flush();
     while (Serial.available())
     {
         Serial.read();
@@ -516,17 +532,16 @@ char get_raw_response(const char *cmd, char *res_buff, size_t buff_size, unsigne
 {
 
     flushSerial();
-    delay(100);
     memset(res_buff, '\0', buff_size);
-    Serial.println("Size of response buffer" + buff_size);
+    Serial.println("Size of response buffer" + (String)buff_size);
     size_t buff_pos = 0;
     Serial.print("Received Command in get raw: ");
-    Serial.print(cmd);
+    Serial.println(cmd);
     fona.println(cmd);
     unsigned long sendStartMillis = millis();
     do
     {
-        if (buff_pos == buff_size) // Check if buff is full
+        if (buff_pos >= buff_size) // Check if buff is full
             break;
 
         while (fona.available())
@@ -539,9 +554,18 @@ char get_raw_response(const char *cmd, char *res_buff, size_t buff_size, unsigne
                 break;
         }
 
+        // eat unsolicited result code "RDY"
+        if (strstr(res_buff, "RDY"))
+        {
+            // reset buff
+            memset(res_buff, '\0', buff_size);
+            buff_pos = 0;
+            Serial.println("Eating URC 'RDY'");
+        }
+
         delay(2);
-    } while (strlen(res_buff) == 0 || (millis() - sendStartMillis < timeout));
-    Serial.println("\n-------\nGSM RAW RESPONSE:\n");
+    } while (strlen(res_buff) == 0 && (millis() - sendStartMillis < timeout));
+    Serial.println("\n-------\r\nGSM RAW RESPONSE:");
     Serial.println(res_buff);
     Serial.println("-------");
 
@@ -579,6 +603,8 @@ bool extractText(char *input, const char *target, char *output, char _until)
             size_t length = end - start;
 
             // Copy the status code to the output array
+            size_t sizeofoutput = sizeof(output);
+            Serial.println("Size of output: " + (String)sizeofoutput);
             if (length < sizeof(output))
             { // check for buffer overflow.
                 strncpy(output, start, length);
@@ -593,6 +619,48 @@ bool extractText(char *input, const char *target, char *output, char _until)
     }
     Serial.println("Could not extact substring '" + (String)target + "' from the source");
     return false; // Target not found or status code not found
+}
+
+// extract an integer
+int16_t getNumber(char *AT_cmd, char *expected_reply, uint8_t index_from, uint8_t length)
+{
+
+    int16_t num;
+
+    char AT_response[255];
+    size_t AT_res_size = sizeof(AT_response);
+
+    char number[8];
+
+    if (length > sizeof(number))
+    {
+        Serial.println("max length allowed is 8");
+        return -1;
+    }
+
+    get_raw_response(AT_cmd, AT_response, AT_res_size);
+
+    const char *found_target = strstr(AT_response, expected_reply);
+
+    if (found_target == nullptr)
+        return -1;
+
+    // Find the start of desired extraction point
+    const char *start = found_target + strlen(expected_reply);
+    start += index_from; // E.g to extract 5 from +CREG: 0,5,7 will start from '+CREG: ' + 2 indices
+
+    if (length < sizeof(number))
+    {
+
+        strncpy(number, start, length);
+        number[length] = '\0';
+    }
+
+    Serial.print("Extracted number: ");
+    Serial.println(number);
+
+    num = atoi(number);
+    return num;
 }
 
 // Simple function to troubleshoot GSM //? More to be done
