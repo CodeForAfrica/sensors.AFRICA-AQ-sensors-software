@@ -533,7 +533,7 @@ char get_raw_response(const char *cmd, char *res_buff, size_t buff_size, bool fi
 
     flushSerial();
     memset(res_buff, '\0', buff_size);
-    Serial.println("Size of response buffer" + (String)buff_size);
+    Serial.println("Size of response buffer: " + (String)buff_size);
     size_t buff_pos = 0;
     Serial.print("Received Command in get raw: ");
     Serial.println(cmd);
