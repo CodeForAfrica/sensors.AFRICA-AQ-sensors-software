@@ -692,9 +692,10 @@ void setup(void)
 	createLoggerConfigs();
 	debug_outln_info(F("\nChipId: "), esp_chipid);
 
+	is_SDS_running = SDS_cmd(PmSensorCmd::Stop); // Stop PMS at boot
+
 	if (cfg::gsm_capable)
 	{
-		// is_SDS_running = SDS_cmd(PmSensorCmd::Stop); // ! This has nothing to do with GSM
 		Serial.println("Attempting to setup GSM connection");
 
 		pinMode(QUECTEL_PWR_KEY, OUTPUT);
