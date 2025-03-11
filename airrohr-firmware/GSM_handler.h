@@ -47,7 +47,7 @@ void flushSerial();
 void SerialFlush();
 void QUECTEL_POST(char *url, String headers[], int header_size, const String &data, int data_length);
 bool extractText(char *input, const char *target, char *output, uint8_t output_size, char _until); // ? should go to utils
-char get_raw_response(const char *cmd, char *res_buff, size_t buff_size, unsigned long timeout = 3000);
+char get_raw_response(const char *cmd, char *res_buff, size_t buff_size, bool fill_buffer = false, unsigned long timeout = 1000);
 int16_t getNumber(char *AT_cmd, char *expected_reply, uint8_t index_from, uint8_t length);
 void troubleshoot_GSM();
 
@@ -488,7 +488,7 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
     if (fona.sendCheckReply(http_post_prepare, F("CONNECT"), 3000))
     {
         Serial.println("Posting gprs data..");
-        get_raw_response(gprs_data, HTTP_RESPONSE, BUFFER_SIZE, 10000);
+        get_raw_response(gprs_data, HTTP_RESPONSE, BUFFER_SIZE, true, 10000);
     }
     else
     {
@@ -528,7 +528,7 @@ void SerialFlush()
     }
 }
 
-char get_raw_response(const char *cmd, char *res_buff, size_t buff_size, unsigned long timeout)
+char get_raw_response(const char *cmd, char *res_buff, size_t buff_size, bool fill_buffer, unsigned long timeout)
 {
 
     flushSerial();
@@ -564,7 +564,7 @@ char get_raw_response(const char *cmd, char *res_buff, size_t buff_size, unsigne
         }
 
         delay(2);
-    } while (strlen(res_buff) == 0 && (millis() - sendStartMillis < timeout));
+    } while ((fill_buffer ? fill_buffer : strlen(res_buff) == 0) && (millis() - sendStartMillis < timeout));
     Serial.println("\n-------\r\nGSM RAW RESPONSE:");
     Serial.println(res_buff);
     Serial.println("-------");
