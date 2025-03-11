@@ -641,7 +641,9 @@ static void powerOnTestSensors()
 void setup(void)
 {
 
-	Serial.begin(9600); // Output to Serial at 9600 baud
+	Serial.flush();
+	delay(2000);
+	Serial.begin(9600);
 
 #if defined(ESP8266)
 	serialSDS.begin(9600, SWSERIAL_8N1, PM_SERIAL_RX, PM_SERIAL_TX);
@@ -674,7 +676,6 @@ void setup(void)
 #endif
 	cfg::initNonTrivials(esp_chipid.c_str());
 	WiFi.persistent(false);
-	SerialFlush();
 	delay(3000);
 	debug_outln_info(F("airRohr: " SOFTWARE_VERSION_STR "/"), String(CURRENT_LANG));
 	if ((airrohr_selftest_failed = !ESP.checkFlashConfig(true) /* after 2.7.0 update: || !ESP.checkFlashCRC() */))
@@ -684,7 +685,7 @@ void setup(void)
 	}
 	logEnabledAPIs();
 	// logEnabledDisplays();
-	init_config();
+	// init_config();
 	// init_display();
 	// init_lcd();
 	// setup_webserver();
@@ -693,7 +694,7 @@ void setup(void)
 
 	if (cfg::gsm_capable)
 	{
-		is_SDS_running = SDS_cmd(PmSensorCmd::Stop);
+		// is_SDS_running = SDS_cmd(PmSensorCmd::Stop); // ! This has nothing to do with GSM
 		Serial.println("Attempting to setup GSM connection");
 
 		pinMode(QUECTEL_PWR_KEY, OUTPUT);
@@ -711,7 +712,7 @@ void setup(void)
 
 		while (!register_to_network())
 		{
-			Serial.println("Retrying network registeration...");
+			Serial.println("Retrying network registration...");
 		}
 
 		// GPRS init
@@ -1082,5 +1083,6 @@ void loop(void)
 	{
 		//		Serial.println(ESP.getFreeHeap(),DEC);
 	}
-	SerialFlush();
+
+	Serial.flush();
 }
