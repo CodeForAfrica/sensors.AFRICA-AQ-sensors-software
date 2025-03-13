@@ -56,6 +56,7 @@
 #define FONA_STTONE_USADIALTONE 20
 
 #define FONA_DEFAULT_TIMEOUT_MS 1000
+#define FONA_DEFAULT_RST_TIMING_DELAY 10
 
 #define FONA_HTTP_GET 0
 #define FONA_HTTP_POST 1
@@ -70,8 +71,13 @@
 class Adafruit_FONA : public FONAStreamType
 {
 public:
+        enum RST_SEQ
+        {
+                HIGH_LOW_HIGH,
+                LOW_HIGH_LOW
+        };
         Adafruit_FONA(int8_t r);
-        boolean begin(FONAStreamType &port);
+        boolean begin(FONAStreamType &port, RST_SEQ sequence = HIGH_LOW_HIGH, uint8_t _timing_delay = FONA_DEFAULT_RST_TIMING_DELAY);
         uint8_t type();
 
         // Stream

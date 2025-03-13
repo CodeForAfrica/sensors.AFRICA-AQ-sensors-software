@@ -46,27 +46,29 @@ uint8_t Adafruit_FONA::type(void)
   return _type;
 }
 
-boolean Adafruit_FONA::begin(Stream &port)
+boolean Adafruit_FONA::begin(Stream &port, RST_SEQ sequence, uint8_t _timing_delay)
 {
   mySerial = &port;
+
   pinMode(_rstpin, OUTPUT);
 
-#ifdef QUECTEL
-  Serial.println("Setting up Quectel");
-  digitalWrite(_rstpin, LOW);
-  delay(120);
-  digitalWrite(_rstpin, HIGH);
-  delay(120);
-  digitalWrite(_rstpin, LOW);
+  if (sequence == HIGH_LOW_HIGH)
+  {
+    digitalWrite(_rstpin, HIGH);
+    delay(_timing_delay);
+    digitalWrite(_rstpin, LOW);
+    delay(_timing_delay);
+    digitalWrite(_rstpin, HIGH);
+  }
+  else if (sequence == LOW_HIGH_LOW)
+  {
 
-#else
-  Serial.println("Setting up SIMCOM");
-  digitalWrite(_rstpin, HIGH);
-  delay(10);
-  digitalWrite(_rstpin, LOW);
-  delay(100);
-  digitalWrite(_rstpin, HIGH);
-#endif
+    digitalWrite(_rstpin, LOW);
+    delay(_timing_delay);
+    digitalWrite(_rstpin, HIGH);
+    delay(_timing_delay);
+    digitalWrite(_rstpin, LOW);
+  }
 
   DEBUG_PRINTLN(F("Attempting to open comm with ATs"));
   // give 7 seconds to reboot
