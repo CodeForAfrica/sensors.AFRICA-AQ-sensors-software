@@ -50,7 +50,7 @@ bool extractText(char *input, const char *target, char *output, uint8_t output_s
 char get_raw_response(const char *cmd, char *res_buff, size_t buff_size, bool fill_buffer = false, unsigned long timeout = 1000);
 int16_t getNumber(char *AT_cmd, char *expected_reply, uint8_t index_from, uint8_t length);
 void get_http_response_status(String data, char *HTTP_RESPONSE_STATUS);
-bool sendAndCheck(const char *AT_cmd, const char *expected_reply);
+bool sendAndCheck(const char *AT_cmd, const char *expected_reply, unsigned long timeout = 1000);
 
 void troubleshoot_GSM();
 
@@ -411,8 +411,8 @@ void disableGPRS()
 }
 
 /*****************************************************************
-/* flushSerial                                                   *
-/*****************************************************************/
+ flushSerial
+*****************************************************************/
 void flushSerial()
 {
     while (fonaSS.available())
@@ -455,7 +455,7 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
         // fonaSerial->println(HTTP_CFG);
         char HTTP_CONFIG[64];
         get_raw_response(HTTP_CFG.c_str(), HTTP_CONFIG, 64, false, 2000);
-        if (strstr(HTTP_CONFIG, "OK"))
+        if (sendAndCheck(HTTP_CFG.c_str(), "OK"))
         {
             Serial.println("Header set successfully");
         }
@@ -480,7 +480,7 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
     // String res = handle_AT_CMD(HTTP_CFG);
 
     Serial.println(http_post_prepare);
-    if (fona.sendCheckReply(http_post_prepare, F("CONNECT"), 3000))
+    if (sendAndCheck(http_post_prepare, "CONNECT", 30000)) // Allow enough time to connect to HTTP(S) server
     {
         Serial.println("Posting gprs data..");
         get_http_response_status(data, HTTP_POST_RESPONSE_STATUS);
@@ -491,9 +491,6 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
         HTTPCFG_CONNECT_FAIL += 1;
         return;
     }
-
-    // Check HTTP RESPONSE status
-    const char *expected_reply = "+QHTTPPOST: 0,"; // Operartion successful
 
     if (strstr(HTTP_POST_RESPONSE_STATUS, "20"))
     {
@@ -652,12 +649,12 @@ int16_t getNumber(char *AT_cmd, char *expected_reply, uint8_t index_from, uint8_
 /// @param AT_cmd : AT command to send
 /// @param expected_reply : expect reply from the AT command to contain this string
 /// @return true if expected reply is found
-bool sendAndCheck(const char *AT_cmd, const char *expected_reply)
+bool sendAndCheck(const char *AT_cmd, const char *expected_reply, unsigned long timeout)
 {
     char AT_response[255];
     size_t AT_res_size = sizeof(AT_response);
 
-    get_raw_response(AT_cmd, AT_response, AT_res_size);
+    get_raw_response(AT_cmd, AT_response, AT_res_size, false, timeout);
 
     if (strstr(AT_response, expected_reply))
     {
