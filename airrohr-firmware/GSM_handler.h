@@ -49,6 +49,9 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
 bool extractText(char *input, const char *target, char *output, uint8_t output_size, char _until); // ? should go to utils
 char get_raw_response(const char *cmd, char *res_buff, size_t buff_size, bool fill_buffer = false, unsigned long timeout = 1000);
 int16_t getNumber(char *AT_cmd, char *expected_reply, uint8_t index_from, uint8_t length);
+void get_http_response_status(String data, char *HTTP_RESPONSE_STATUS);
+bool sendAndCheck(const char *AT_cmd, const char *expected_reply);
+
 void troubleshoot_GSM();
 
 // Set a decent delay before this to warm up the GSM module
@@ -102,21 +105,8 @@ bool register_to_network()
     String error_msg = "";
     bool registered_to_network = false;
     int retry_count = 0;
-    char NET_RESPONSE[64];
-    size_t buff_size = sizeof(NET_RESPONSE);
     while (!registered_to_network && retry_count < 20)
     {
-
-        // uint8_t netstatus = fona.getNetworkStatus();
-        // Serial.print("Network Status: ");
-        // Serial.println((String)netstatus);
-        // if ((netstatus == 1) || netstatus == 5)
-        // {
-        //     Serial.print("Connected to network");
-        //     registered_to_network = true;
-        //     break;
-        // }
-
         int8_t status = getNumber("AT+CREG?", "+CREG: ", 2, 1);
 
         if (status == 1 || status == 5)
@@ -476,12 +466,7 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
         }
     }
 
-    char HTTP_RESPONSE[255];
-    size_t BUFFER_SIZE = sizeof(HTTP_RESPONSE);
     char HTTP_POST_RESPONSE_STATUS[4];
-    const char *data_copy = data.c_str();
-    char gprs_data[strlen(data_copy)];
-    strcpy(gprs_data, data_copy);
 
     // POST data
     // HTTP_CFG = "AT+QHTTPPOST=" + String(data_length) + ",30,60";
@@ -498,7 +483,7 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
     if (fona.sendCheckReply(http_post_prepare, F("CONNECT"), 3000))
     {
         Serial.println("Posting gprs data..");
-        get_raw_response(gprs_data, HTTP_RESPONSE, BUFFER_SIZE, true, 10000);
+        get_http_response_status(data, HTTP_POST_RESPONSE_STATUS);
     }
     else
     {
@@ -510,22 +495,14 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
     // Check HTTP RESPONSE status
     const char *expected_reply = "+QHTTPPOST: 0,"; // Operartion successful
 
-    if (extractText(HTTP_RESPONSE, expected_reply, HTTP_POST_RESPONSE_STATUS, 4, ','))
+    if (strstr(HTTP_POST_RESPONSE_STATUS, "20"))
     {
-        if (strstr(HTTP_POST_RESPONSE_STATUS, "20"))
-        {
-            Serial.println("Requested processed successfully with status: " + (String)HTTP_POST_RESPONSE_STATUS);
-        }
-        else
-        {
-            Serial.println("Requested processing failed with status: " + (String)HTTP_POST_RESPONSE_STATUS);
-            HTTP_POST_FAIL += 1;
-        }
+        Serial.println("Requested processed successfully with status: " + (String)HTTP_POST_RESPONSE_STATUS);
     }
     else
     {
-        Serial.println("Could not extract HTTP response status code");
-        //? Maybe troubleshoot
+        Serial.println("Requested processing failed with status: " + (String)HTTP_POST_RESPONSE_STATUS);
+        HTTP_POST_FAIL += 1;
     }
 }
 
@@ -688,6 +665,31 @@ bool sendAndCheck(const char *AT_cmd, const char *expected_reply)
     }
 
     return false;
+}
+
+void get_http_response_status(String data, char *HTTP_RESPONSE_STATUS)
+{
+    char HTTP_RESPONSE[255];
+    size_t BUFFER_SIZE = sizeof(HTTP_RESPONSE);
+    const char *data_copy = data.c_str();
+    char gprs_data[strlen(data_copy)];
+    strcpy(gprs_data, data_copy);
+    get_raw_response(gprs_data, HTTP_RESPONSE, BUFFER_SIZE, true, 10000);
+
+    // Check HTTP RESPONSE status
+    const char *expected_reply = "+QHTTPPOST: 0,"; // Operartion successful
+
+    if (extractText(HTTP_RESPONSE, expected_reply, HTTP_RESPONSE_STATUS, 4, ','))
+    {
+
+        Serial.print("Gotten http status code: ");
+        Serial.println(HTTP_RESPONSE_STATUS);
+    }
+    else
+    {
+        Serial.println("Could not extract HTTP response status code");
+        //? Maybe troubleshoot
+    }
 }
 
 // Simple function to troubleshoot GSM //? More to be done
