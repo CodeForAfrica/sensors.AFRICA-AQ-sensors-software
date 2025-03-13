@@ -47,7 +47,7 @@ void flushSerial();
 void SerialFlush();
 void QUECTEL_POST(char *url, String headers[], int header_size, const String &data, int data_length);
 bool extractText(char *input, const char *target, char *output, uint8_t output_size, char _until); // ? should go to utils
-char get_raw_response(const char *cmd, char *res_buff, size_t buff_size, bool fill_buffer = false, unsigned long timeout = 1000);
+void get_raw_response(const char *cmd, char *res_buff, size_t buff_size, bool fill_buffer = false, unsigned long timeout = 1000);
 int16_t getNumber(char *AT_cmd, char *expected_reply, uint8_t index_from, uint8_t length);
 void get_http_response_status(String data, char *HTTP_RESPONSE_STATUS);
 bool sendAndCheck(const char *AT_cmd, const char *expected_reply, unsigned long timeout = 1000);
@@ -411,7 +411,7 @@ void disableGPRS()
 }
 
 /*****************************************************************
- flushSerial
+flushSerial
 *****************************************************************/
 void flushSerial()
 {
@@ -512,7 +512,7 @@ void SerialFlush()
     }
 }
 
-char get_raw_response(const char *cmd, char *res_buff, size_t buff_size, bool fill_buffer, unsigned long timeout)
+void get_raw_response(const char *cmd, char *res_buff, size_t buff_size, bool fill_buffer, unsigned long timeout)
 {
 
     flushSerial();
@@ -552,8 +552,6 @@ char get_raw_response(const char *cmd, char *res_buff, size_t buff_size, bool fi
     Serial.println("\n-------\r\nGSM RAW RESPONSE:");
     Serial.println(res_buff);
     Serial.println("-------");
-
-    return *res_buff;
 }
 
 /***
