@@ -671,6 +671,25 @@ int16_t getNumber(char *AT_cmd, char *expected_reply, uint8_t index_from, uint8_
     return num;
 }
 
+/// @brief simple function to send AT command and check for expected reply
+/// @param AT_cmd : AT command to send
+/// @param expected_reply : expect reply from the AT command to contain this string
+/// @return true if expected reply is found
+bool sendAndCheck(const char *AT_cmd, const char *expected_reply)
+{
+    char AT_response[255];
+    size_t AT_res_size = sizeof(AT_response);
+
+    get_raw_response(AT_cmd, AT_response, AT_res_size);
+
+    if (strstr(AT_response, expected_reply))
+    {
+        return true;
+    }
+
+    return false;
+}
+
 // Simple function to troubleshoot GSM //? More to be done
 void troubleshoot_GSM()
 {
