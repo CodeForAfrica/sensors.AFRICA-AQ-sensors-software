@@ -58,7 +58,7 @@ bool GSM_init(SoftwareSerial *gsm_serial)
     String error_msg = "";
 
     // Check if there is serial communication with a GSM module
-    if (!fona.begin(*gsm_serial))
+    if (!fona.begin(*gsm_serial, fona.LOW_HIGH_LOW, 120))
     {
         error_msg = "Could not find GSM module";
         GSM_INIT_ERROR = error_msg;
@@ -463,7 +463,17 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
         HTTP_CFG = "AT+QHTTPCFG=\"header\",\"" + headers[i] + "\"";
         Serial.println(HTTP_CFG);
         // fonaSerial->println(HTTP_CFG);
-        handle_AT_CMD(HTTP_CFG);
+        char HTTP_CONFIG[64];
+        get_raw_response(HTTP_CFG.c_str(), HTTP_CONFIG, 64, false, 2000);
+        if (strstr(HTTP_CONFIG, "OK"))
+        {
+            Serial.println("Header set successfully");
+        }
+        else
+        {
+            Serial.println("Failed to set header");
+            return;
+        }
     }
 
     char HTTP_RESPONSE[255];
