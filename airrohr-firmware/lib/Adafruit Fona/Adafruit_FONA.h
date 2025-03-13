@@ -30,7 +30,7 @@
 #define FONA3G_A 4
 #define FONA3G_E 5
 
-#define QUECTEL EC200UCN
+#define QUECTEL_EC200U 7
 
 // Set the preferred SMS storage.
 //   Use "SM" for storage on the SIM.
@@ -77,7 +77,7 @@ public:
                 LOW_HIGH_LOW
         };
         Adafruit_FONA(int8_t r);
-        boolean begin(FONAStreamType &port, RST_SEQ sequence = HIGH_LOW_HIGH, uint8_t _timing_delay = FONA_DEFAULT_RST_TIMING_DELAY);
+        boolean begin(FONAStreamType &port, RST_SEQ sequence = LOW_HIGH_LOW, uint8_t _timing_delay = FONA_DEFAULT_RST_TIMING_DELAY);
         uint8_t type();
 
         // Stream

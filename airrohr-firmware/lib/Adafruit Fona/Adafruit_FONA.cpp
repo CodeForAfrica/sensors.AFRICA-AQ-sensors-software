@@ -145,6 +145,10 @@ boolean Adafruit_FONA::begin(Stream &port, RST_SEQ sequence, uint8_t _timing_del
   {
     _type = FONA3G_E;
   }
+  else if (prog_char_strstr(replybuffer, (prog_char *)F("EC200U")) != 0)
+  {
+    _type = QUECTEL_EC200U;
+  }
 
   if (_type == FONA800L)
   {
@@ -164,10 +168,12 @@ boolean Adafruit_FONA::begin(Stream &port, RST_SEQ sequence, uint8_t _timing_del
       _type = FONA800H;
     }
   }
-
+  if (_type != QUECTEL_EC200U)
+  {
 #if defined(FONA_PREF_SMS_STORAGE)
-  sendCheckReply(F("AT+CPMS=" FONA_PREF_SMS_STORAGE "," FONA_PREF_SMS_STORAGE "," FONA_PREF_SMS_STORAGE), ok_reply);
+    sendCheckReply(F("AT+CPMS=" FONA_PREF_SMS_STORAGE "," FONA_PREF_SMS_STORAGE "," FONA_PREF_SMS_STORAGE), ok_reply);
 #endif
+  }
 
   return true;
 }
@@ -240,11 +246,14 @@ uint8_t Adafruit_FONA::unlockSIM(char *pin)
 
 uint8_t Adafruit_FONA::getSIMCCID(char *ccid)
 {
-#ifdef QUECTEL
-  getReply(F("AT+QCCID"));
-#else
-  getReply(F("AT+CCID"));
-#endif
+  if (_type == QUECTEL_EC200U)
+  {
+    getReply(F("AT+QCCID"));
+  }
+  else
+  {
+    getReply(F("AT+CCID"));
+  }
   // up to 28 chars for reply, 20 char total ccid
   if (replybuffer[0] == '+')
   {
