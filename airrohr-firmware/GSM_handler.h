@@ -36,7 +36,6 @@ uint16_t HTTPOST_RESPONSE_STATUS;
 bool GSM_init(SoftwareSerial *gsm_serial);
 bool register_to_network();
 static void unlock_pin(char *PIN);
-String handle_AT_CMD(String cmd, int _delay = 1000);
 void SIM_PIN_Setup();
 bool is_SIMCID_valid();
 bool GPRS_init();
@@ -96,6 +95,8 @@ bool GSM_init(SoftwareSerial *gsm_serial)
     // Set if SIM is usable flag
     SIM_USABLE = true;
 
+    fona.sendCheckReply(F("AT+CMEE=2"), F("OK"));
+
     return true;
 }
 
@@ -122,8 +123,6 @@ bool register_to_network()
 
         retry_count++;
         delay(3000);
-        SerialFlush();
-        flushSerial();
     }
 
     if (!registered_to_network)
@@ -179,33 +178,6 @@ static void unlock_pin(char *PIN)
 
         SIM_PIN_SET = true;
     }
-}
-
-String handle_AT_CMD(String cmd, int _delay)
-{
-    SerialFlush();
-    flushSerial();
-    String RESPONSE = "";
-    fona.println(cmd);
-    int sendStartMillis = millis();
-    // delay(_delay); // Avoid putting any code that might delay the receiving all contents from the serial buffer as it is quickly filled up
-    do
-    {
-        if (fona.available())
-        {
-            RESPONSE += fona.readString();
-        }
-
-        delay(2);
-    } while (RESPONSE == "" || (millis() - sendStartMillis < _delay));
-
-    Serial.println();
-    Serial.println("GSM RESPONSE:");
-    Serial.println("-------");
-    Serial.print(RESPONSE);
-    Serial.println("-----");
-    SerialFlush();
-    return RESPONSE;
 }
 
 void SIM_PIN_Setup()
@@ -317,16 +289,8 @@ bool GPRS_init()
     // }
 
 #else
-    String res = handle_AT_CMD("AT+SAPBR=1,1"); // Enable GPRS
-    String res = handle_AT_CMD("AT+QCFG=\"gprsattach\",1");
-    if (res.indexOf("OK") == -1)
-    {
-        err = "Failed to enable GPRS";
-        GSM_INIT_ERROR = err;
-        Serial.println(err);
-        GPRS_CONNECTED = false;
-        return GPRS_CONNECTED;
-    }
+    // "AT+SAPBR=1,1"
+    // "AT+QCFG=\"gprsattach\",1"
 #endif
 
     if (!GPRS_CONNECTED)
@@ -441,7 +405,7 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
     String HTTP_CFG = "AT+QHTTPCFG=\"url\",\"http://" + String(url) + "\""; // protocol must be set before URL
     Serial.print("Quectel URL config: ");
     Serial.println(HTTP_CFG);
-    handle_AT_CMD(HTTP_CFG);
+    sendAndCheck(HTTP_CFG.c_str(), "OK");
 
     fona.sendCheckReply(F("AT+QHTTPCFG=\"contextid\",1"), F("OK"));      // set context id
     fona.sendCheckReply(F("AT+QHTTPCFG=\"requestheader\",0"), F("OK"));  // disable request headers
@@ -475,9 +439,6 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
     itoa(data_length, data_len, 10);
     strcat(http_post_prepare, data_len);
     strcat(http_post_prepare, ",30,60");
-
-    // Serial.println(HTTP_CFG);
-    // String res = handle_AT_CMD(HTTP_CFG);
 
     Serial.println(http_post_prepare);
     if (sendAndCheck(http_post_prepare, "CONNECT", 30000)) // Allow enough time to connect to HTTP(S) server
@@ -515,12 +476,12 @@ void SerialFlush()
 void get_raw_response(const char *cmd, char *res_buff, size_t buff_size, bool fill_buffer, unsigned long timeout)
 {
 
-    flushSerial();
+    // flushSerial();
     memset(res_buff, '\0', buff_size);
-    Serial.println("Size of response buffer: " + (String)buff_size);
+    // Serial.println("Size of response buffer: " + (String)buff_size);
     size_t buff_pos = 0;
-    Serial.print("Received Command in get raw: ");
-    Serial.println(cmd);
+    // Serial.print("Received Command in get raw: ");
+    // Serial.println(cmd);
     fona.println(cmd);
     unsigned long sendStartMillis = millis();
     do
