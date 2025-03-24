@@ -415,10 +415,6 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
     for (int i = 0; i < header_size; i++)
     {
         HTTP_CFG = "AT+QHTTPCFG=\"header\",\"" + headers[i] + "\"";
-        Serial.println(HTTP_CFG);
-        // fonaSerial->println(HTTP_CFG);
-        char HTTP_CONFIG[64];
-        get_raw_response(HTTP_CFG.c_str(), HTTP_CONFIG, 64, false, 2000);
         if (sendAndCheck(HTTP_CFG.c_str(), "OK"))
         {
             Serial.println("Header set successfully");
