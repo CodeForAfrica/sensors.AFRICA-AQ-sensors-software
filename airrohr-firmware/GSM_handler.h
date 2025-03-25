@@ -259,24 +259,30 @@ bool GPRS_init()
 
     // Check CGATT status
     Serial.println("\nChecking CGATT Status..");
-    fona.sendParseReply(F("AT+CGATT?"), F("+CGATT:"), &CGATT_status, ' ', 1);
+    CGATT_status = fona.GPRSstate();
     Serial.println("CGATT_status: " + (String)CGATT_status);
 
+    if (CGATT_status == 1)
+    {
+        GPRS_CONNECTED = true;
+        GPRS_INIT_FAIL_COUNT = 0;
+    }
+
     // Attach CGATT
-    if (CGATT_status != 1)
+    else
     {
 
-        GPRS_CONNECTED = fona.sendCheckReply(F("AT+CGATT=1"), F("OK"), 5000);
-        delay(2000);
-
-        if (!fona.sendParseReply(F("AT+CGATT?"), F("+CGATT:"), &CGATT_status, ' ', 1))
+        if (fona.sendCheckReply(F("AT+CGATT=1"), F("OK"), 5000))
+        {
+            delay(2000);
+            CGATT_status = fona.GPRSstate();
+            if (CGATT_status == 1)
+                GPRS_CONNECTED = true;
+        }
+        else
         {
             Serial.println("CGATT status set to: " + (String)CGATT_status); // !! sometimes not reached when using if statement. delay needed
         }
-    }
-    else
-    {
-        GPRS_CONNECTED = true;
     }
 
     // if (!fona.sendCheckReply(F("AT+QIACT=1"), F("OK"), 3000))
