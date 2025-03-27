@@ -708,7 +708,7 @@ bool configurePDP()
 {
     // char PDP_config[32] = "AT+QICSGP=1,1,\"";
     char *ipaddr = getIPAddress();
-    if (strlen(ipaddr) < 7 || strcmp(ipaddr, "0.0.0.0"))
+    if (strlen(ipaddr) < 7 || strcmp(ipaddr, "0.0.0.0") == 0)
     {
         // recursive call to get IP address on different network modes
         char PDP_config[32] = "AT+CGDCONT=1,\"IP\",\"hologram\"";
