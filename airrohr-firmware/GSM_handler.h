@@ -443,7 +443,7 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
     strcat(http_post_prepare, ",30,60");
 
     Serial.println(http_post_prepare);
-    if (sendAndCheck(http_post_prepare, "CONNECT", 30000)) // Allow enough time to connect to HTTP(S) server
+    if (sendAndCheck(http_post_prepare, "CONNECT", 10000)) // Allow enough time to connect to HTTP(S) server. Should be less than the timeout the GSM expects the data to be sent.
     {
         Serial.println("Posting gprs data..");
         get_http_response_status(data, HTTP_POST_RESPONSE_STATUS);
