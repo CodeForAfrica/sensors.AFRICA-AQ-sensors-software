@@ -32,6 +32,14 @@ int REGISTER_TO_NETWORK_FAIL = 0;
 
 uint16_t HTTPOST_RESPONSE_STATUS;
 
+enum NetMode // Quectel
+{
+    AUTO = 0,
+    _2G = 1,
+    _4G = 3,
+};
+int current_network = NetMode::AUTO;
+
 /**** Function Declacrations **/
 bool GSM_init(SoftwareSerial *gsm_serial);
 bool register_to_network();
@@ -664,6 +672,30 @@ void troubleshoot_GSM()
     HTTPCFG_CONNECT_FAIL = 0;
     HTTP_POST_FAIL = 0;
     GPRS_INIT_FAIL_COUNT = 0;
+}
+
+void setNetworkMode(NetMode mode)
+{
+    char setnetmode[24] = "AT+QCFG=\"nwscanmode\",";
+    char _mode[1];
+    itoa(mode, _mode, 10);
+    strcat(setnetmode, _mode);
+    if (!sendAndCheck(setnetmode, "OK"))
+    {
+        Serial.print("Failed to set network mode: ");
+        switch (mode)
+        {
+        case (NetMode::_2G):
+            Serial.println("2G");
+            break;
+        case (NetMode::_4G):
+            Serial.println("4G");
+            break;
+        case (NetMode::AUTO):
+            Serial.println("Automatic");
+            break;
+        }
+    }
 }
 
 // Testing POST data
