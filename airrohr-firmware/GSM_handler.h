@@ -38,7 +38,7 @@ enum NetMode // Quectel
     _2G = 1,
     _4G = 3,
 };
-int current_network = NetMode::AUTO;
+NetMode current_network = NetMode::AUTO;
 
 /**** Function Declacrations **/
 bool GSM_init(SoftwareSerial *gsm_serial);
@@ -58,7 +58,9 @@ void get_raw_response(const char *cmd, char *res_buff, size_t buff_size, bool fi
 int16_t getNumber(char *AT_cmd, char *expected_reply, uint8_t index_from, uint8_t length);
 void get_http_response_status(String data, char *HTTP_RESPONSE_STATUS);
 bool sendAndCheck(const char *AT_cmd, const char *expected_reply, unsigned long timeout = 1000);
-
+bool configurePDP();
+char *getIPAddress();
+void setNetworkMode(NetMode mode);
 void troubleshoot_GSM();
 
 // Set a decent delay before this to warm up the GSM module
@@ -114,6 +116,7 @@ bool register_to_network()
     String error_msg = "";
     bool registered_to_network = false;
     int retry_count = 0;
+    setNetworkMode(current_network);
     while (!registered_to_network && retry_count < 20)
     {
         int8_t status = getNumber("AT+CREG?", "+CREG: ", 2, 1);
@@ -246,10 +249,10 @@ bool GPRS_init()
     bool PDP_config = false;
     while (timeout > 0)
     {
-        PDP_config = fona.sendCheckReply(F("AT+QICSGP=1,1"), F("OK"));
+        PDP_config = configurePDP();
         if (PDP_config)
         {
-            Serial.println("PDP context set");
+            Serial.println("\nPDP context set");
             break;
         }
         Serial.print(".");
@@ -695,7 +698,64 @@ void setNetworkMode(NetMode mode)
             Serial.println("Automatic");
             break;
         }
+        return;
     }
+    delay(1000);
+    current_network = mode;
+}
+
+bool configurePDP()
+{
+    // char PDP_config[32] = "AT+QICSGP=1,1,\"";
+    char *ipaddr = getIPAddress();
+    if (strlen(ipaddr) < 7 || strcmp(ipaddr, "0.0.0.0"))
+    {
+        // recursive call to get IP address on different network modes
+        char PDP_config[32] = "AT+CGDCONT=1,\"IP\",\"hologram\"";
+
+        switch (current_network)
+        {
+        case NetMode::AUTO:
+            setNetworkMode(NetMode::_2G);
+            sendAndCheck(PDP_config, "OK");
+            configurePDP();
+            break;
+        case NetMode::_2G:
+            setNetworkMode(NetMode::_4G);
+            sendAndCheck(PDP_config, "OK");
+            configurePDP();
+            break;
+        case NetMode::_4G:
+            setNetworkMode(NetMode::AUTO);
+            sendAndCheck(PDP_config, "OK");
+            configurePDP();
+            break;
+        }
+
+        return false;
+    }
+
+    return true;
+}
+
+char *getIPAddress()
+{
+    char ipaddr[16] = {}; // 15 characters for IPV4 address
+
+    char AT_response[64];
+    get_raw_response("AT+CGPADDR=1", AT_response, 64, false); // ! context id assumed to be 1
+
+    if (extractText(AT_response, "+CGPADDR: 1,\"", ipaddr, 16, '"'))
+    {
+        Serial.print("IP Address: ");
+        Serial.println(ipaddr);
+    }
+    else
+    {
+        Serial.println("Failed to get IP address");
+    }
+
+    return ipaddr;
 }
 
 // Testing POST data
