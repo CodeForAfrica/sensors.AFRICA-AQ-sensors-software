@@ -59,7 +59,7 @@ int16_t getNumber(char *AT_cmd, char *expected_reply, uint8_t index_from, uint8_
 void get_http_response_status(String data, char *HTTP_RESPONSE_STATUS);
 bool sendAndCheck(const char *AT_cmd, const char *expected_reply, unsigned long timeout = 1000);
 bool configurePDP();
-char *getIPAddress();
+void getIPAddress(char *IP);
 void setNetworkMode(NetMode mode);
 void troubleshoot_GSM();
 
@@ -489,7 +489,7 @@ void SerialFlush()
 void get_raw_response(const char *cmd, char *res_buff, size_t buff_size, bool fill_buffer, unsigned long timeout)
 {
 
-    // flushSerial();
+    flushSerial();
     memset(res_buff, '\0', buff_size);
     // Serial.println("Size of response buffer: " + (String)buff_size);
     size_t buff_pos = 0;
@@ -707,7 +707,8 @@ void setNetworkMode(NetMode mode)
 bool configurePDP()
 {
     // char PDP_config[32] = "AT+QICSGP=1,1,\"";
-    char *ipaddr = getIPAddress();
+    char ipaddr[16] = {};
+    getIPAddress(ipaddr);
     if (strlen(ipaddr) < 7 || strcmp(ipaddr, "0.0.0.0") == 0)
     {
         // recursive call to get IP address on different network modes
@@ -738,7 +739,7 @@ bool configurePDP()
     return true;
 }
 
-char *getIPAddress()
+void getIPAddress(char *IP)
 {
     char ipaddr[16] = {}; // 15 characters for IPV4 address
 
@@ -749,13 +750,12 @@ char *getIPAddress()
     {
         Serial.print("IP Address: ");
         Serial.println(ipaddr);
+        strcpy(IP, ipaddr);
     }
     else
     {
         Serial.println("Failed to get IP address");
     }
-
-    return ipaddr;
 }
 
 // Testing POST data
