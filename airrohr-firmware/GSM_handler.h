@@ -1,15 +1,16 @@
 #include <SoftwareSerial.h>
-#include <Adafruit_FONA.h>
 #include "ext_def.h"
 
-// SoftwareSerial fonaSS(FONA_TX, FONA_RX);
 #define MCU_RXD D5
 #define MCU_TXD D6
 #define QUECTEL_PWR_KEY D0
 #define QUECTEL_DTR D9
-SoftwareSerial fonaSS(MCU_RXD, MCU_TXD); // Testing Quectel Board
-SoftwareSerial *fonaSerial = &fonaSS;
-Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
+SoftwareSerial GSMSerial(MCU_RXD, MCU_TXD);
+enum RST_SEQ
+{
+    HIGH_LOW_HIGH,
+    LOW_HIGH_LOW
+};
 
 char SIM_PIN[5] = GSM_PIN;
 bool GSM_CONNECTED = false;
@@ -41,9 +42,9 @@ enum NetMode // Quectel
 NetMode current_network = NetMode::AUTO;
 
 /**** Function Declacrations **/
-bool GSM_init(SoftwareSerial *gsm_serial);
+bool GSM_init();
 bool register_to_network();
-static void unlock_pin(char *PIN);
+// static void unlock_pin(char *PIN);
 void SIM_PIN_Setup();
 bool is_SIMCID_valid();
 bool GPRS_init();
@@ -64,24 +65,23 @@ void troubleshoot_GSM();
 int8_t GPRS_status();
 bool activateGPRS();
 bool deactivateGPRS();
+bool GSM_Serial_begin();
+void GSMreset(RST_SEQ seq, uint8_t timing_delay = 120);
 
 // Set a decent delay before this to warm up the GSM module
-bool GSM_init(SoftwareSerial *gsm_serial)
-{ // Pass a ptr to SoftwareSerial GSM instance
-    gsm_serial->begin(115200);
+bool GSM_init()
+{
+
     String error_msg = "";
 
-    // Check if there is serial communication with a GSM module
-    if (!fona.begin(*gsm_serial, fona.LOW_HIGH_LOW, 120))
-    {
-        error_msg = "Could not find GSM module";
-        GSM_INIT_ERROR = error_msg;
-        Serial.println(error_msg);
-        GSM_CONNECTED = false;
-        return false;
-    }
+    Serial.println("Restarting GSM...");
+#ifdef GSM_RST_PIN
 
-    Serial.println("GSM module found!");
+    GSMreset(RST_SEQ::LOW_HIGH_LOW);
+#else
+    GSM_soft_reset();
+
+#endif
 
     // Check if SIM is inserted
     if (!is_SIMCID_valid())
@@ -106,8 +106,6 @@ bool GSM_init(SoftwareSerial *gsm_serial)
     // }
     // Set if SIM is usable flag
     SIM_USABLE = true;
-
-    fona.sendCheckReply(F("AT+CMEE=2"), F("OK"));
 
     return true;
 }
@@ -147,7 +145,7 @@ bool register_to_network()
 
         // Attempt to enable network registration
 
-        if (!fona.sendCheckReply(F("AT+CREG=1"), F("OK")))
+        if (!sendAndCheck("AT+CREG=1", "OK"))
         {
             Serial.println("Manual network registration failed.");
         }
@@ -161,42 +159,30 @@ bool register_to_network()
         return false;
     }
 
-    fona.sendCheckReply(F("AT+COPS?"), F("OK"));
+    sendAndCheck("AT+COPS?", "OK");
     return true;
 }
 
-static void unlock_pin(char *PIN)
-{
-    // flushSerial();
+// static void unlock_pin(char *PIN)
+// {
 
-    // Attempt to SET PIN if not empty
-    Serial.print("GSM CONFIG SET PIN: ");
-    Serial.println(PIN);
-    Serial.print("Length of PIN");
-    Serial.println(strlen(PIN));
-    if (strlen(PIN) > 1)
-    {
-        // debug_outln(F("\nAttempting to Unlock SIM please wait: "), DEBUG_MIN_INFO);
-        Serial.print("Attempting to unlock SIM using PIN: ");
-        Serial.println(PIN);
-        if (!fona.unlockSIM(PIN))
-        {
-            // debug_outln(F("Failed to Unlock SIM card with pin: "), DEBUG_MIN_INFO);
-            Serial.print("Failed to Unlock SIM card with PIN: ");
-            // debug_outln(gsm_pin, DEBUG_MIN_INFO);
-            Serial.println(PIN);
-            SIM_PIN_SET = false;
-            return;
-        }
+//     // Attempt to SET PIN if not empty
+//     Serial.print("GSM CONFIG SET PIN: ");
+//     Serial.println(PIN);
+//     Serial.print("Length of PIN");
+//     Serial.println(strlen(PIN));
+//     if (strlen(PIN) <4)
+//     {
 
-        SIM_PIN_SET = true;
-    }
-}
+//     // ToDo: WIP
+//         SIM_PIN_SET = true;
+//     }
+// }
 
 void SIM_PIN_Setup()
 {
 
-    if (fona.sendCheckReply(F("AT+CPIN?"), F("+CPIN: READY"), 3000))
+    if (sendAndCheck("AT+CPIN?", "+CPIN: READY", 3000))
     {
         Serial.println("SIM PIN READY");
         SIM_PIN_SET = true;
@@ -215,26 +201,8 @@ bool is_SIMCID_valid() // ! Seems to be returning true even when there is "ERROR
 {
     char qccid[30];
 
-    int timeout = 5000;
-    Serial.print("Getting SIM CCID ");
-    while (!fona.getSIMCCID(qccid) && timeout > 0)
-    {
-        Serial.print(".");
-        timeout -= 1000;
-        delay(1000);
-    }
-
-    if ((String)qccid != "")
-    {
-        Serial.print("SIM card available. CCID: ");
-        Serial.println(qccid);
-        SIM_AVAILABLE = true;
-        return SIM_AVAILABLE;
-    }
-    else
-    {
-        return false;
-    }
+    // ToDo: Refactor WIP
+    return false;
 }
 
 // Similar to FONA enableGPRS() but quicker because APN setting are not configured as it is configured during GSM_init()
@@ -336,14 +304,8 @@ void restart_GSM()
 {
     Serial.println("Restarting GSM");
     //! The AQ PCB board has the GSM reset physically connected to the ESP chip
-    // GSM_soft_reset();
-    // if (!fona.begin(*fonaSerial))
-    // {
-    //     Serial.println("Couldn't find GSM");
-    //     return;
-    // }
 
-    if (!GSM_init(fonaSerial))
+    if (!GSM_init())
     {
         Serial.println("GSM not fully configured");
         Serial.print("Failure point: ");
@@ -357,8 +319,8 @@ flushSerial
 *****************************************************************/
 void flushSerial()
 {
-    while (fonaSS.available())
-        fonaSS.read();
+    while (GSMSerial.available())
+        GSMSerial.read();
 }
 
 /// @brief Easy implementation of Quectel HTTP functionality
@@ -385,10 +347,10 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
     Serial.println(HTTP_CFG);
     sendAndCheck(HTTP_CFG.c_str(), "OK");
 
-    fona.sendCheckReply(F("AT+QHTTPCFG=\"contextid\",1"), F("OK"));      // set context id
-    fona.sendCheckReply(F("AT+QHTTPCFG=\"requestheader\",0"), F("OK"));  // disable request headers
-    fona.sendCheckReply(F("AT+QHTTPCFG=\"responseheader\",1"), F("OK")); // enable response headers
-    fona.sendCheckReply(F("AT+QHTTPCFG=\"rspout/auto\",1"), F("OK"));    // enable auto response and "disable" HTTTPREAD
+    sendAndCheck("AT+QHTTPCFG=\"contextid\",1", "OK");      // set context id
+    sendAndCheck("AT+QHTTPCFG=\"requestheader\",0", "OK");  // disable request headers
+    sendAndCheck("AT+QHTTPCFG=\"responseheader\",1", "OK"); // enable response headers
+    sendAndCheck("AT+QHTTPCFG=\"rspout/auto\",1", "OK");    // enable auto response and "disable" HTTTPREAD
 
     for (int i = 0; i < header_size; i++)
     {
@@ -456,17 +418,17 @@ void get_raw_response(const char *cmd, char *res_buff, size_t buff_size, bool fi
     size_t buff_pos = 0;
     // Serial.print("Received Command in get raw: ");
     // Serial.println(cmd);
-    fona.println(cmd);
+    GSMSerial.println(cmd);
     unsigned long sendStartMillis = millis();
     do
     {
         if (buff_pos >= buff_size) // Check if buff is full
             break;
 
-        while (fona.available())
+        while (GSMSerial.available())
         {
 
-            res_buff[buff_pos] = fona.read();
+            res_buff[buff_pos] = GSMSerial.read();
             buff_pos++;
 
             if (buff_pos == buff_size)
@@ -626,7 +588,7 @@ void get_http_response_status(String data, char *HTTP_RESPONSE_STATUS)
 void troubleshoot_GSM()
 {
 
-    GSM_init(fonaSerial); // ! Use GSM soft reset if GSM reset pin is not connected
+    GSM_init(); // ! Use GSM soft reset if GSM reset pin is not connected
 
     register_to_network();
 
@@ -770,6 +732,76 @@ bool deactivateGPRS()
         }
         return true;
     }
+}
+
+bool GSM_Serial_begin()
+{
+    pinMode(QUECTEL_PWR_KEY, OUTPUT);
+    digitalWrite(QUECTEL_PWR_KEY, HIGH);
+
+    GSMSerial.begin(115200);
+
+    bool comm_init = false;
+
+    int16_t timeout = 30000;
+
+    Serial.println("Attempting to initate comms with GSM module");
+
+    while (millis() < timeout)
+    {
+        while (GSMSerial.available())
+            GSMSerial.read();
+        if (sendAndCheck("AT", "OK"))
+        {
+            comm_init = true;
+            Serial.println("GSM module found!");
+            break;
+        }
+    }
+    if (!comm_init)
+    {
+        return false;
+    }
+
+// debug
+#ifdef GSM_DEBUG
+    sendAndCheck("ATE1", "OK");
+    sendAndCheck("AT+CMEE=2", "OK");
+#else
+    sendAndCheck("ATE0", "OK");
+    sendAndCheck("AT+CMEE=1", "OK");
+#endif
+    sendAndCheck("ATI", "OK");
+
+    return comm_init;
+}
+
+/// @brief Reset GSM module
+/// @param seq: Sequence to to toggle reset pin to trigger a restart
+/// @param timing_delay : Timing function for the reset to happen
+void GSMreset(RST_SEQ seq, uint8_t timing_delay)
+{
+
+    pinMode(GSM_RST_PIN, OUTPUT);
+
+    if (seq == LOW_HIGH_LOW)
+    {
+        digitalWrite(GSM_RST_PIN, LOW);
+        delay(timing_delay);
+        digitalWrite(GSM_RST_PIN, HIGH);
+        delay(timing_delay);
+        digitalWrite(GSM_RST_PIN, LOW);
+    }
+    else if (seq == HIGH_LOW_HIGH)
+    {
+        digitalWrite(GSM_RST_PIN, HIGH);
+        delay(timing_delay);
+        digitalWrite(GSM_RST_PIN, LOW);
+        delay(timing_delay);
+        digitalWrite(GSM_RST_PIN, HIGH);
+    }
+
+    delay(30000); // Allow enough time for GSM to warm up
 }
 
 // Testing POST data
