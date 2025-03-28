@@ -127,15 +127,15 @@ constexpr unsigned XLARGE_STR = 1024 - 1;
 	String name((const char *)nullptr); \
 	name.reserve(size)
 
-const unsigned long SAMPLETIME_MS = 30000;	   // time between two measurements of the PPD42NS
-const unsigned long SAMPLETIME_SDS_MS = 1000;  // time between two measurements of the SDS011, PMSx003, Honeywell PM sensor
-const unsigned long WARMUPTIME_SDS_MS = 15000; // time needed to "warm up" the sensor before we can take the first measurement
-const unsigned long READINGTIME_SDS_MS = 5000; // how long we read data from the PM sensors
+const unsigned long SAMPLETIME_MS = 4 * 60 * 000; // time between two measurements of the PPD42NS
+const unsigned long SAMPLETIME_SDS_MS = 1000;	  // time between two measurements of the SDS011, PMSx003, Honeywell PM sensor
+const unsigned long WARMUPTIME_SDS_MS = 15000;	  // time needed to "warm up" the sensor before we can take the first measurement
+const unsigned long READINGTIME_SDS_MS = 5000;	  // how long we read data from the PM sensors
 const unsigned long SAMPLETIME_GPS_MS = 50;
 const unsigned long DISPLAY_UPDATE_INTERVAL_MS = 5000; // time between switching display to next "screen"
 const unsigned long ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
-const unsigned long PAUSE_BETWEEN_UPDATE_ATTEMPTS_MS = ONE_DAY_IN_MS;		// check for firmware updates once a day
-const unsigned long DURATION_BEFORE_FORCED_RESTART_MS = ONE_DAY_IN_MS * 28; // force a reboot every ~4 weeks
+// const unsigned long PAUSE_BETWEEN_UPDATE_ATTEMPTS_MS = ONE_DAY_IN_MS; // check for firmware updates once a day
+const unsigned long DURATION_BEFORE_FORCED_RESTART_MS = ONE_DAY_IN_MS / 4; // force a reboot every 6hrs //? prevent board from "hanging"
 
 #include "namespace_cfg.h" // include namespace cfg
 
@@ -463,6 +463,10 @@ static void sensor_restart()
 #endif
 	SPIFFS.end();
 	serialSDS.end();
+
+	// Serial.println("Going to sleep");
+	// fona.sendCheckReply(F("AT+QSCLK=2"), F("OK")); // sleep device
+	// ESP.deepSleep(300000000);
 	debug_outln_info(F("Restart."));
 	delay(500);
 	ESP.restart();
@@ -696,35 +700,41 @@ void setup(void)
 
 	if (cfg::gsm_capable)
 	{
-		Serial.println("Attempting to setup GSM connection");
-
-		pinMode(QUECTEL_PWR_KEY, OUTPUT);
-		digitalWrite(QUECTEL_PWR_KEY, HIGH);
-		delay(5000);
-
-		while (!GSM_init(fonaSerial))
+		if (GSM_Serial_begin())
 		{
-			Serial.println("GSM not fully configured");
-			Serial.print("Failure point: ");
-			Serial.println(GSM_INIT_ERROR);
-			Serial.println();
-		}
-		GSM_CONNECTED = true;
 
-		while (!register_to_network())
-		{
-			Serial.println("Retrying network registration...");
-		}
+			if (!GSM_init())
+			{
+				Serial.println("GSM not fully configured");
+				Serial.print("Failure point: ");
+				Serial.println(GSM_INIT_ERROR);
+				Serial.println();
+				return;
+			}
+			else
+			{
+				GSM_CONNECTED = true;
 
-		// GPRS init
+				while (!register_to_network()) // ! INFINITE LOOP!
+				{
+					Serial.println("Retrying network registration...");
+				}
 
-		if (!GPRS_init())
-		{
-			Serial.println("Failed to init GPRS");
+				// GPRS init
+
+				if (!GPRS_init())
+				{
+					Serial.println("Failed to init GPRS");
+				}
+				else
+				{
+					Serial.println("GPRS initialized!");
+				}
+			}
 		}
 		else
 		{
-			Serial.println("GPRS initialized!");
+			Serial.println("Could not communicate to GSM module.");
 		}
 	}
 	// if (!GPRS_CONNECTED)
