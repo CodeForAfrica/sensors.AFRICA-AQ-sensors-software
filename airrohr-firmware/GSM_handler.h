@@ -19,7 +19,7 @@ bool GPRS_CONNECTED = false;
 bool SIM_PIN_SET = false;
 bool SIM_USABLE = false;
 uint16_t CGATT_status;
-char SIM_CID[21] = "";
+char SIM_CCID[21] = "";
 String GSM_INIT_ERROR = "";
 String NETWORK_NAME = "";
 
@@ -199,10 +199,25 @@ void SIM_PIN_Setup()
 
 bool is_SIMCID_valid() // ! Seems to be returning true even when there is "ERROR" in response
 {
-    char qccid[30];
+    char qccid[21];
 
-    // ToDo: Refactor WIP
-    return false;
+    char AT_response[255] = {};
+
+    char expected_reply[] = "+QCCID: ";
+
+    get_raw_response("AT+QCCID\0", AT_response, 255, true, 5000);
+
+    if (extractText(AT_response, expected_reply, qccid, 21, '\r') && strlen(qccid) == 20)
+    {
+        strcpy(SIM_CCID, qccid);
+        SIM_AVAILABLE = true;
+        return SIM_AVAILABLE;
+    }
+    else
+    {
+
+        return false;
+    }
 }
 
 // Similar to FONA enableGPRS() but quicker because APN setting are not configured as it is configured during GSM_init()
