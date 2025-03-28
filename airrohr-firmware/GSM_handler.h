@@ -655,17 +655,20 @@ bool configurePDP()
         switch (current_network)
         {
         case NetMode::AUTO:
-            setNetworkMode(NetMode::_2G);
+            current_network = NetMode::_2G;
+            register_to_network();
             sendAndCheck(PDP_config, "OK");
             configurePDP();
             break;
         case NetMode::_2G:
-            setNetworkMode(NetMode::_4G);
+            current_network = NetMode::_4G;
+            register_to_network();
             sendAndCheck(PDP_config, "OK");
             configurePDP();
             break;
         case NetMode::_4G:
-            setNetworkMode(NetMode::AUTO);
+            current_network = NetMode::AUTO;
+            register_to_network();
             sendAndCheck(PDP_config, "OK");
             configurePDP();
             break;
