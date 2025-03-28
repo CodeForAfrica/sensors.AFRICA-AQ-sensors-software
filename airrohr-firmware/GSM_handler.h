@@ -49,7 +49,6 @@ bool is_SIMCID_valid();
 bool GPRS_init();
 void GSM_soft_reset();
 void restart_GSM();
-void enableGPRS();
 void flushSerial();
 void SerialFlush();
 void QUECTEL_POST(char *url, String headers[], int header_size, const String &data, int data_length);
@@ -62,6 +61,9 @@ bool configurePDP();
 void getIPAddress(char *IP);
 void setNetworkMode(NetMode mode);
 void troubleshoot_GSM();
+int8_t GPRS_status();
+bool activateGPRS();
+bool deactivateGPRS();
 
 // Set a decent delay before this to warm up the GSM module
 bool GSM_init(SoftwareSerial *gsm_serial)
@@ -270,7 +272,7 @@ bool GPRS_init()
 
     // Check CGATT status
     Serial.println("\nChecking CGATT Status..");
-    CGATT_status = fona.GPRSstate();
+    CGATT_status = GPRS_status();
     Serial.println("CGATT_status: " + (String)CGATT_status);
 
     if (CGATT_status == 1)
@@ -283,27 +285,21 @@ bool GPRS_init()
     else
     {
 
-        if (fona.sendCheckReply(F("AT+CGATT=1"), F("OK"), 5000))
+        if (activateGPRS())
         {
             delay(2000);
-            CGATT_status = fona.GPRSstate();
+            CGATT_status = GPRS_status();
             if (CGATT_status == 1)
                 GPRS_CONNECTED = true;
         }
         else
         {
             Serial.println("CGATT status set to: " + (String)CGATT_status); // !! sometimes not reached when using if statement. delay needed
+            GPRS_CONNECTED = false;
         }
     }
 
-    // if (!fona.sendCheckReply(F("AT+QIACT=1"), F("OK"), 3000))
-    // {
-    //     err = "Failed to activate GPRS PDP context";
-    //     GSM_INIT_ERROR = err;
-    //     Serial.println(err);
-    //     GPRS_CONNECTED = false;
-    //     return GPRS_CONNECTED;
-    // }
+    //? QIACT
 
 #else
     // "AT+SAPBR=1,1"
@@ -319,29 +315,15 @@ bool GPRS_init()
 
 void GSM_soft_reset()
 {
-    // #ifdef QUECTEL
-    //     // ! Observation per v1 of Quectel PCB is that it POWERS BACK ON immediately after sending POWER DOWN command
-    //     if (fona.sendCheckReply(F("AT+QPOWD"), F("POWERED DOWN")))
-    //     {
-    //         Serial.println("Restarting QUECTEL GSM");
-    //         delay(10000); // Give module enough time to register to network
-    //     }
-    //     else
-    //     {
-    //         Serial.println("Failed to power down Quectel module");
-    //     }
+    deactivateGPRS();
 
-    // #else
-    fona.enableGPRS(false); // basically shut down GPRS service
-
-    if (!fona.sendCheckReply(F("AT+CFUN=1,1"), F("OK")))
+    if (!sendAndCheck("AT+CFUN=1,1", "OK"))
     {
         Serial.println("Soft resetting GSM with full functionality failed!");
         return;
     }
     Serial.println("Soft resetting the GSM module...");
     delay(30000); // wait for GSM to warm up
-    // #endif
 }
 
 /***
@@ -368,27 +350,6 @@ void restart_GSM()
         Serial.println(GSM_INIT_ERROR);
         Serial.println();
     }
-}
-
-void enableGPRS()
-{
-    // fona.setGPRSNetworkSettings(FONAFlashStringPtr(gprs_apn), FONAFlashStringPtr(gprs_username), FONAFlashStringPtr(gprs_password));
-
-    int retry_count = 0;
-    while ((fona.GPRSstate() != 0) && (retry_count < 40))
-    {
-        delay(3000);
-        fona.enableGPRS(true);
-        retry_count++;
-    }
-
-    fona.enableGPRS(true);
-}
-
-void disableGPRS()
-{
-    fona.enableGPRS(false);
-    GPRS_CONNECTED = false;
 }
 
 /*****************************************************************
@@ -755,6 +716,59 @@ void getIPAddress(char *IP)
     else
     {
         Serial.println("Failed to get IP address");
+    }
+}
+
+int8_t GPRS_status()
+{
+
+    int8_t status = getNumber("AT+CGATT?\0", "+CGATT: ", 0, 1);
+    Serial.print("CGATT status: ");
+    Serial.println(status);
+    return status;
+}
+
+bool activateGPRS()
+{
+    if (GPRS_status() == 1)
+    {
+        Serial.println("GPRS already active");
+        return true;
+    }
+    if (sendAndCheck("AT+CGATT=1", "OK"))
+    {
+
+        return true;
+    }
+    else
+    {
+        Serial.println("Failed to enable GPRS");
+        return false;
+    }
+}
+
+bool deactivateGPRS()
+{
+
+    if (GPRS_status() == 0)
+    {
+        Serial.println("GPRS already inactive");
+        return true;
+    }
+    else
+    {
+        if (sendAndCheck("AT+CGATT=0", "OK"))
+        {
+            // query GPRS status
+            GPRS_status();
+            return true;
+        }
+        else
+        {
+            Serial.println("Failed to disable GPRS");
+            return false;
+        }
+        return true;
     }
 }
 
