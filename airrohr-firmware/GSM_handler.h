@@ -693,19 +693,22 @@ bool activateGPRS()
         case NetMode::AUTO:
             current_network = NetMode::_2G;
             register_to_network();
+            activateGPRS();
             break;
         case NetMode::_2G:
             current_network = NetMode::_4G;
             register_to_network();
+            activateGPRS();
             break;
         case NetMode::_4G:
             current_network = NetMode::AUTO;
             register_to_network();
+            activateGPRS();
             break;
         }
     }
 
-    Serial.println("Failed to enable GPRS");
+    // Serial.println("Failed to enable GPRS"); //? will be printed bt previous recursive call
     return false;
 }
 
