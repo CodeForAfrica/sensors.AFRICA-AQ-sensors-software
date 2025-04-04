@@ -225,74 +225,30 @@ bool GPRS_init()
 {
 
     String err = "";
-
-#ifdef QUECTEL
     Serial.println("Quectel GPRS init...");
 
-    int timeout = 5000;
-    Serial.println("Configuring PDP context ");
-    bool PDP_config = false;
-    while (timeout > 0)
+    if (!activateGPRS())
     {
-        PDP_config = configurePDP();
-        if (PDP_config)
-        {
-            Serial.println("\nPDP context set");
-            break;
-        }
-        Serial.print(".");
-        timeout -= 1000;
-        delay(2000);
+        err = "Failed to attach to GPRS network";
+        GSM_INIT_ERROR = err;
+        Serial.println(err);
+        GPRS_INIT_FAIL_COUNT += 1;
+        return false;
     }
 
-    if (!PDP_config)
+    if (!configurePDP())
     {
         err = "Failed to config GPRS PDP context";
         GSM_INIT_ERROR = err;
         Serial.println(err);
+        GPRS_INIT_FAIL_COUNT += 1;
         return false;
     }
 
-    // Check CGATT status
-    Serial.println("\nChecking CGATT Status..");
-    CGATT_status = GPRS_status();
-    Serial.println("CGATT_status: " + (String)CGATT_status);
-
-    if (CGATT_status == 1)
-    {
-        GPRS_CONNECTED = true;
-        GPRS_INIT_FAIL_COUNT = 0;
-    }
-
-    // Attach CGATT
-    else
-    {
-
-        if (activateGPRS())
-        {
-            delay(2000);
-            CGATT_status = GPRS_status();
-            if (CGATT_status == 1)
-                GPRS_CONNECTED = true;
-        }
-        else
-        {
-            Serial.println("CGATT status set to: " + (String)CGATT_status); // !! sometimes not reached when using if statement. delay needed
-            GPRS_CONNECTED = false;
-        }
-    }
-
     //? QIACT
+    GPRS_CONNECTED = true;
+    GPRS_INIT_FAIL_COUNT = 0;
 
-#else
-    // "AT+SAPBR=1,1"
-    // "AT+QCFG=\"gprsattach\",1"
-#endif
-
-    if (!GPRS_CONNECTED)
-    {
-        GPRS_INIT_FAIL_COUNT += 1;
-    }
     return GPRS_CONNECTED;
 }
 
@@ -616,64 +572,66 @@ void troubleshoot_GSM()
 }
 
 void setNetworkMode(NetMode mode)
+
 {
+    if (mode != NetMode::AUTO || mode != NetMode::_2G || mode != NetMode::_4G)
+    {
+        Serial.println("Invalid network mode");
+        return;
+    }
+
     char setnetmode[24] = "AT+QCFG=\"nwscanmode\",";
     char _mode[1];
     itoa(mode, _mode, 10);
+
     strcat(setnetmode, _mode);
+
+    char mode_str[8];
+    switch (mode)
+    {
+    case (NetMode::_2G):
+        strcpy(mode_str, "2G");
+        break;
+    case (NetMode::_4G):
+        strcpy(mode_str, "4G");
+        break;
+    case (NetMode::AUTO):
+        strcpy(mode_str, "AUTO");
+        break;
+    }
+
+    Serial.print("Setting network mode to: ");
+    Serial.println(mode_str);
+
     if (!sendAndCheck(setnetmode, "OK"))
     {
         Serial.print("Failed to set network mode: ");
-        switch (mode)
-        {
-        case (NetMode::_2G):
-            Serial.println("2G");
-            break;
-        case (NetMode::_4G):
-            Serial.println("4G");
-            break;
-        case (NetMode::AUTO):
-            Serial.println("Automatic");
-            break;
-        }
+        Serial.println(mode_str);
         return;
     }
     delay(1000);
     current_network = mode;
 }
 
+/// @brief Configure PDP context
 bool configurePDP()
 {
-    // char PDP_config[32] = "AT+QICSGP=1,1,\"";
+
+    char PDP_config[32] = "AT+CGDCONT=1,\"IP\",\"hologram\""; //! APN name should be a global variable after testing
+
+    if (!sendAndCheck(PDP_config, "OK"))
+    {
+        Serial.println("Failed to set PDP context");
+        return false;
+    }
+
     char ipaddr[16] = {};
     getIPAddress(ipaddr);
+
     if (strlen(ipaddr) < 7 || strcmp(ipaddr, "0.0.0.0") == 0)
     {
         // recursive call to get IP address on different network modes
-        char PDP_config[32] = "AT+CGDCONT=1,\"IP\",\"hologram\"";
-
-        switch (current_network)
-        {
-        case NetMode::AUTO:
-            current_network = NetMode::_2G;
-            register_to_network();
-            sendAndCheck(PDP_config, "OK");
-            configurePDP();
-            break;
-        case NetMode::_2G:
-            current_network = NetMode::_4G;
-            register_to_network();
-            sendAndCheck(PDP_config, "OK");
-            configurePDP();
-            break;
-        case NetMode::_4G:
-            current_network = NetMode::AUTO;
-            register_to_network();
-            sendAndCheck(PDP_config, "OK");
-            configurePDP();
-            break;
-        }
-
+        Serial.println("IP address not set.");
         return false;
     }
 
@@ -708,6 +666,7 @@ int8_t GPRS_status()
     return status;
 }
 
+/// @brief attach GPRS Network
 bool activateGPRS()
 {
     if (GPRS_status() == 1)
@@ -715,16 +674,42 @@ bool activateGPRS()
         Serial.println("GPRS already active");
         return true;
     }
-    if (sendAndCheck("AT+CGATT=1", "OK"))
-    {
 
+    bool activated = sendAndCheck("AT+CGATT=1", "OK");
+    if (activated)
+    {
+        Serial.println("GPRS attached");
         return true;
     }
-    else
+
+    if (!activated)
     {
-        Serial.println("Failed to enable GPRS");
-        return false;
+        Serial.print("GPRS failed activate on network mode:  ");
+        Serial.print(current_network);
+        Serial.println("\t(AUTO:0, 2G:1, 4G:3)");
+
+        switch (current_network)
+        {
+        case NetMode::AUTO:
+            current_network = NetMode::_2G;
+            register_to_network();
+            configurePDP();
+            break;
+        case NetMode::_2G:
+            current_network = NetMode::_4G;
+            register_to_network();
+            configurePDP();
+            break;
+        case NetMode::_4G:
+            current_network = NetMode::AUTO;
+            register_to_network();
+            configurePDP();
+            break;
+        }
     }
+
+    Serial.println("Failed to enable GPRS");
+    return false;
 }
 
 bool deactivateGPRS()
