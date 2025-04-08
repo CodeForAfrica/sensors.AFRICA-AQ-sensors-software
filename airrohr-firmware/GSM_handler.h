@@ -581,11 +581,11 @@ void troubleshoot_GSM()
 void setNetworkMode(NetMode mode)
 
 {
-    if (mode != NetMode::AUTO || mode != NetMode::_2G || mode != NetMode::_4G)
-    {
-        Serial.println("Invalid network mode");
-        return;
-    }
+    // if (mode != NetMode::AUTO || mode != NetMode::_2G || mode != NetMode::_4G)
+    // {
+    //     Serial.println("Invalid network mode");
+    //     return;
+    // }
 
     char setnetmode[24] = "AT+QCFG=\"nwscanmode\",";
     char _mode[1];
