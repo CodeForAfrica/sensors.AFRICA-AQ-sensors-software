@@ -59,6 +59,7 @@ int16_t getNumber(char *AT_cmd, char *expected_reply, uint8_t index_from, uint8_
 void get_http_response_status(String data, char *HTTP_RESPONSE_STATUS);
 bool sendAndCheck(const char *AT_cmd, const char *expected_reply, unsigned long timeout = 1000, bool wait_timeout = false);
 bool configurePDP();
+bool activatePDPContext();
 void getIPAddress(char *IP);
 void setNetworkMode(NetMode mode);
 void troubleshoot_GSM();
@@ -245,7 +246,7 @@ bool GPRS_init()
         return false;
     }
 
-    if (!activatePDPContext)
+    if (!activatePDPContext())
     {
         err = "Failed to activate GPRS PDP context";
         GSM_INIT_ERROR = err;
