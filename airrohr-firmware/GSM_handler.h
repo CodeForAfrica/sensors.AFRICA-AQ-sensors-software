@@ -801,6 +801,7 @@ bool GSM_Serial_begin()
     // ATE1: echo AT command on sent on the serial line. Useful for debugging/unit tests
     // ! Affects the get raw response function as it may indicate that we have gotten back a response and exit
     // sendAndCheck("ATE1", "OK");
+    sendAndCheck("ATE0", "OK");
 
     sendAndCheck("AT+CMEE=2", "OK");
 #else
@@ -808,6 +809,7 @@ bool GSM_Serial_begin()
     sendAndCheck("AT+CMEE=1", "OK");
 #endif
     sendAndCheck("ATI", "OK");
+    sendAndCheck("AT&W", "OK"); // Save configurations
 
     return comm_init;
 }
