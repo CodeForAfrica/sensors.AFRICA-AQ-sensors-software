@@ -159,7 +159,7 @@ bool register_to_network()
         return false;
     }
 
-    sendAndCheck("AT+COPS?", "OK");
+    sendAndCheck("AT+COPS?", "OK", 180000); //
     return true;
 }
 
@@ -626,7 +626,7 @@ bool configurePDP()
 
     char PDP_config[32] = "AT+CGDCONT=1,\"IP\",\"hologram\""; //! APN name should be a global variable after testing
 
-    if (!sendAndCheck(PDP_config, "OK", 30000))
+    if (!sendAndCheck(PDP_config, "OK", 30000)) //? although max res is 300ms
     {
         Serial.println("Failed to set PDP context");
         return false;
@@ -643,7 +643,7 @@ bool activatePDPContext()
     }
     else
     {
-        if (!sendAndCheck("AT+QIACT=1", "OK", 30000))
+        if (!sendAndCheck("AT+QIACT=1", "OK", 150000))
         {
             Serial.println("Failed to activate PDP context");
             return false;
