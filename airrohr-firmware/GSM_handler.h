@@ -245,7 +245,14 @@ bool GPRS_init()
         return false;
     }
 
-    //? QIACT
+    if (!activatePDPContext)
+    {
+        err = "Failed to activate GPRS PDP context";
+        GSM_INIT_ERROR = err;
+        Serial.println(err);
+        GPRS_INIT_FAIL_COUNT += 1;
+        return false;
+    }
     GPRS_CONNECTED = true;
     GPRS_INIT_FAIL_COUNT = 0;
 
@@ -619,10 +626,32 @@ bool configurePDP()
 
     char PDP_config[32] = "AT+CGDCONT=1,\"IP\",\"hologram\""; //! APN name should be a global variable after testing
 
-    if (!sendAndCheck(PDP_config, "OK", 30000, true))
+    if (!sendAndCheck(PDP_config, "OK", 30000))
     {
         Serial.println("Failed to set PDP context");
         return false;
+    }
+
+    return true;
+}
+
+bool activatePDPContext()
+{
+    if (getNumber("AT+QIACT?", "+QIACT: 1,", 0, 1) == 1)
+    {
+        Serial.println("PDP context already activated");
+    }
+    else
+    {
+        if (!sendAndCheck("AT+QIACT=1", "OK", 30000))
+        {
+            Serial.println("Failed to activate PDP context");
+            return false;
+        }
+        else
+        {
+            Serial.println("PDP context activated");
+        }
     }
 
     char ipaddr[16] = {};
@@ -637,7 +666,6 @@ bool configurePDP()
 
     return true;
 }
-
 void getIPAddress(char *IP)
 {
     char ipaddr[16] = {}; // 15 characters for IPV4 address
@@ -650,6 +678,7 @@ void getIPAddress(char *IP)
         Serial.print("IP Address: ");
         Serial.println(ipaddr);
         strcpy(IP, ipaddr);
+        strcat(IP, "\0");
     }
     else
     {
@@ -746,7 +775,7 @@ bool GSM_Serial_begin()
 
     bool comm_init = false;
 
-    int16_t timeout = 30000;
+    uint16_t timeout = 30000;
 
     Serial.println("Attempting to initate comms with GSM module");
 
@@ -768,7 +797,10 @@ bool GSM_Serial_begin()
 
 // debug
 #ifdef GSM_DEBUG
-    sendAndCheck("ATE1", "OK");
+    // ATE1: echo AT command on sent on the serial line. Useful for debugging/unit tests
+    // ! Affects the get raw response function as it may indicate that we have gotten back a response and exit
+    // sendAndCheck("ATE1", "OK");
+
     sendAndCheck("AT+CMEE=2", "OK");
 #else
     sendAndCheck("ATE0", "OK");
