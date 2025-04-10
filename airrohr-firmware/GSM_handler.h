@@ -160,7 +160,7 @@ bool register_to_network()
         return false;
     }
 
-    sendAndCheck("AT+COPS?", "OK", 180000); //
+    sendAndCheck("AT+COPS?", "OK", 180000); //??
     return true;
 }
 
@@ -183,7 +183,7 @@ bool register_to_network()
 void SIM_PIN_Setup()
 {
 
-    if (sendAndCheck("AT+CPIN?", "+CPIN: READY", 3000))
+    if (("AT+CPIN?", "+CPIN: READY", 3000))
     {
         Serial.println("SIM PIN READY");
         SIM_PIN_SET = true;
@@ -395,8 +395,8 @@ void get_raw_response(const char *cmd, char *res_buff, size_t buff_size, bool wa
     memset(res_buff, '\0', buff_size);
     // Serial.println("Size of response buffer: " + (String)buff_size);
     size_t buff_pos = 0;
-    // Serial.print("Received Command in get raw: ");
-    // Serial.println(cmd);
+    Serial.print("Received Command (in get raw): ");
+    Serial.println(cmd);
     GSMSerial.println(cmd);
     unsigned long sendStartMillis = millis();
     do
