@@ -229,7 +229,7 @@ static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 #endif
 
 // DHT22, temperature, humidity
-#define DHT_READ 0
+#define DHT_READ 1
 #define DHT_TYPE DHT22
 #define DHT_API_PIN 7
 

@@ -68,6 +68,8 @@ bool activateGPRS();
 bool deactivateGPRS();
 bool GSM_Serial_begin();
 void GSMreset(RST_SEQ seq, uint8_t timing_delay = 120);
+char qccid[21];
+int8_t roam_status;
 
 // Set a decent delay before this to warm up the GSM module
 bool GSM_init()
@@ -120,9 +122,9 @@ bool register_to_network()
     setNetworkMode(current_network);
     while (!registered_to_network && retry_count < 20)
     {
-        int8_t status = getNumber("AT+CREG?", "+CREG: ", 2, 1);
+        roam_status = getNumber("AT+CREG?", "+CREG: ", 2, 1);
 
-        if (status == 1 || status == 5)
+        if (roam_status == 1 || roam_status == 5)
         {
             registered_to_network = true;
             break;
@@ -200,7 +202,7 @@ void SIM_PIN_Setup()
 
 bool is_SIMCID_valid() // ! Seems to be returning true even when there is "ERROR" in response
 {
-    char qccid[21];
+    //  char qccid[21];
 
     char AT_response[255] = {};
 
@@ -611,7 +613,7 @@ void setNetworkMode(NetMode mode)
     Serial.print("Setting network mode to: ");
     Serial.println(mode_str);
 
-    if (!sendAndCheck(setnetmode, "OK"))
+    if (!sendAndCheck(setnetmode, "OK", 2000))
     {
         Serial.print("Failed to set network mode: ");
         Serial.println(mode_str);
@@ -624,8 +626,17 @@ void setNetworkMode(NetMode mode)
 /// @brief Configure PDP context
 bool configurePDP()
 {
+    char PDP_config[32];
 
-    char PDP_config[32] = "AT+CGDCONT=1,\"IP\",\"hologram\""; //! APN name should be a global variable after testing
+    if ((roam_status == 5) && (strncmp(qccid, "8946427820", 10) == 0)) // sim is roaming and ICCID starts wit 8946 means it's s hologram sim
+    {                                                                  // our hologram sim cardss have ICCID all starting with 8946
+        strcpy(PDP_config, "AT+CGDCONT=1,\"IP\",\"hologram\"");        //! APN name should be a global variable after testing
+    }
+
+    else // sim is on a home network, a local sim
+    {
+        strcpy(PDP_config, "AT+CGDCONT=1,\"IP\",\"\""); //! APN name should be a global variable after testing
+    }
 
     if (!sendAndCheck(PDP_config, "OK", 30000)) //? although max res is 300ms
     {
