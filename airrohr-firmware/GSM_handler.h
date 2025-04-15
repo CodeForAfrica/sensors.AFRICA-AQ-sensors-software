@@ -625,7 +625,9 @@ void setNetworkMode(NetMode mode)
 bool configurePDP()
 {
 
-    char PDP_config[32] = "AT+CGDCONT=1,\"IP\",\"hologram\""; //! APN name should be a global variable after testing
+    char PDP_config[64] = "AT+CGDCONT=1,\"IP\",";
+    strcat(PDP_config, GPRS_APN);
+    strcat(PDP_config, "\"\0");
 
     if (!sendAndCheck(PDP_config, "OK", 30000)) //? although max res is 300ms
     {
