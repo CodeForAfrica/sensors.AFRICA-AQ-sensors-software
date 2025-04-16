@@ -566,17 +566,16 @@ void get_http_response_status(String data, char *HTTP_RESPONSE_STATUS)
 // Simple function to troubleshoot GSM //? More to be done
 void troubleshoot_GSM()
 {
+    // RESET FLAGS
+    HTTPCFG_CONNECT_FAIL = 0;
+    HTTP_POST_FAIL = 0;
+    GPRS_INIT_FAIL_COUNT = 0;
 
     GSM_init(); // ! Use GSM soft reset if GSM reset pin is not connected
 
     register_to_network();
 
     GPRS_init();
-
-    // RESET FLAGS
-    HTTPCFG_CONNECT_FAIL = 0;
-    HTTP_POST_FAIL = 0;
-    GPRS_INIT_FAIL_COUNT = 0;
 }
 
 void setNetworkMode(NetMode mode)
