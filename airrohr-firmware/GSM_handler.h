@@ -625,7 +625,7 @@ void setNetworkMode(NetMode mode)
 bool configurePDP()
 {
 
-    char PDP_config[64] = "AT+CGDCONT=1,\"IP\",";
+    char PDP_config[64] = "AT+CGDCONT=1,\"IP\",\"";
     strcat(PDP_config, GPRS_APN);
     strcat(PDP_config, "\"\0");
 
