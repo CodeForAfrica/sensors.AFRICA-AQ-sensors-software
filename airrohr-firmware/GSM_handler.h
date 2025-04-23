@@ -68,7 +68,6 @@ bool activateGPRS();
 bool deactivateGPRS();
 bool GSM_Serial_begin();
 void GSMreset(RST_SEQ seq, uint8_t timing_delay = 120);
-char qccid[21];
 int8_t roam_status;
 
 // Set a decent delay before this to warm up the GSM module
@@ -185,7 +184,7 @@ bool register_to_network()
 void SIM_PIN_Setup()
 {
 
-    if (("AT+CPIN?", "+CPIN: READY", 3000))
+    if (sendAndCheck("AT+CPIN?", "+CPIN: READY", 3000))
     {
         Serial.println("SIM PIN READY");
         SIM_PIN_SET = true;
@@ -202,7 +201,7 @@ void SIM_PIN_Setup()
 
 bool is_SIMCID_valid() // ! Seems to be returning true even when there is "ERROR" in response
 {
-    //  char qccid[21];
+    char qccid[21];
 
     char AT_response[255] = {};
 
@@ -331,7 +330,7 @@ void QUECTEL_POST(char *url, String headers[], int header_size, const String &da
     sendAndCheck("AT+QHTTPCFG=\"contextid\",1", "OK");      // set context id
     sendAndCheck("AT+QHTTPCFG=\"requestheader\",0", "OK");  // disable request headers
     sendAndCheck("AT+QHTTPCFG=\"responseheader\",1", "OK"); // enable response headers
-    sendAndCheck("AT+QHTTPCFG=\"rspout/auto\",1", "OK");    // enable auto response and "disable" HTTTPREAD
+    sendAndCheck("AT+QHTTPCFG=\"rspout/auto\",0", "OK");    // enable auto response and "disable" HTTTPREAD
 
     for (int i = 0; i < header_size; i++)
     {
@@ -626,16 +625,18 @@ void setNetworkMode(NetMode mode)
 /// @brief Configure PDP context
 bool configurePDP()
 {
-    char PDP_config[32];
+    char PDP_config[32] = {};
 
-    if ((roam_status == 5) && (strncmp(qccid, "8946427820", 10) == 0)) // sim is roaming and ICCID starts wit 8946 means it's s hologram sim
-    {                                                                  // our hologram sim cardss have ICCID all starting with 8946
-        strcpy(PDP_config, "AT+CGDCONT=1,\"IP\",\"hologram\"");        //! APN name should be a global variable after testing
+    if ((roam_status == 5) && (strncmp(SIM_CCID, "8946427820", 10) == 0)) // sim is roaming and ICCID starts wit 8946 means it's s hologram sim
+    {                                                                     // our hologram sim cardss have ICCID all starting with 8946
+        strcpy(PDP_config, "AT+CGDCONT=1,\"IP\",\"hologram\"");           //! APN name should be a global variable after testing
     }
 
     else // sim is on a home network, a local sim
     {
-        strcpy(PDP_config, "AT+CGDCONT=1,\"IP\",\"\""); //! APN name should be a global variable after testing
+        strcpy(PDP_config, "AT+CGDCONT=1,\"IP\",\"");
+        strcat(PDP_config, GPRS_APN);
+        strcat(PDP_config, "\"");
     }
 
     if (!sendAndCheck(PDP_config, "OK", 30000)) //? although max res is 300ms
