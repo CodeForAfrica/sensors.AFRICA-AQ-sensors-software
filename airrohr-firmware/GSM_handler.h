@@ -567,17 +567,16 @@ void get_http_response_status(String data, char *HTTP_RESPONSE_STATUS)
 // Simple function to troubleshoot GSM //? More to be done
 void troubleshoot_GSM()
 {
+    // RESET FLAGS
+    HTTPCFG_CONNECT_FAIL = 0;
+    HTTP_POST_FAIL = 0;
+    GPRS_INIT_FAIL_COUNT = 0;
 
     GSM_init(); // ! Use GSM soft reset if GSM reset pin is not connected
 
     register_to_network();
 
     GPRS_init();
-
-    // RESET FLAGS
-    HTTPCFG_CONNECT_FAIL = 0;
-    HTTP_POST_FAIL = 0;
-    GPRS_INIT_FAIL_COUNT = 0;
 }
 
 void setNetworkMode(NetMode mode)
@@ -628,8 +627,8 @@ bool configurePDP()
     char PDP_config[32] = {};
 
     if ((roam_status == 5) && (strncmp(SIM_CCID, "8946427820", 10) == 0)) // sim is roaming and ICCID starts wit 8946 means it's s hologram sim
-    {                                                                     // our hologram sim cardss have ICCID all starting with 8946
-        strcpy(PDP_config, "AT+CGDCONT=1,\"IP\",\"hologram\"");           //! APN name should be a global variable after testing
+    {                                                                     // our hologram sim cards have ICCID all starting with 8946
+        strcpy(PDP_config, "AT+CGDCONT=1,\"IP\",\"hologram\"");           //! APN name should be a global variable after testing. Need for cleaner approach for global IoT service
     }
 
     else // sim is on a home network, a local sim
