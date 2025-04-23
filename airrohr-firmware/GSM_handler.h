@@ -54,10 +54,10 @@ void flushSerial();
 void SerialFlush();
 void QUECTEL_POST(char *url, String headers[], int header_size, const String &data, int data_length);
 bool extractText(char *input, const char *target, char *output, uint8_t output_size, char _until); // ? should go to utils
-void get_raw_response(const char *cmd, char *res_buff, size_t buff_size, bool wait_timeout = false, unsigned long timeout = 1000);
+void get_raw_response(const char *cmd, char *res_buff, size_t buff_size, bool wait_timeout = false, unsigned long timeout = 3000);
 int16_t getNumber(char *AT_cmd, char *expected_reply, uint8_t index_from, uint8_t length);
 void get_http_response_status(String data, char *HTTP_RESPONSE_STATUS);
-bool sendAndCheck(const char *AT_cmd, const char *expected_reply, unsigned long timeout = 1000, bool wait_timeout = false);
+bool sendAndCheck(const char *AT_cmd, const char *expected_reply, unsigned long timeout = 3000, bool wait_timeout = false);
 bool configurePDP();
 bool activatePDPContext();
 void getIPAddress(char *IP);
