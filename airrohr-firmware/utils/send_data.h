@@ -450,4 +450,111 @@ static String hmac1(const String &secret, const String &s)
     str = secret + str;
     return sha1Hex(str);
 }
+
+static String readLine(fs::FS &fs, const char *path, int &next_char, int &from, bool closefile = true)
+{
+    String line = "";
+    char c;
+
+    File file = fs.open(path, "r");
+
+    if (!file)
+    {
+        Serial.println("Failed to open file to read line");
+        return "";
+    }
+
+    file.seek(from);
+
+    while (file.available())
+    {
+        c = file.read();
+        if (c == '\n')
+        {
+            break;
+        }
+        // Skip carriage return
+        if (c != '\r')
+        {
+            line += c;
+        }
+    }
+
+    from = file.position();
+    // file.seek((last_read_index), SeekMode::SeekSet);
+    next_char = file.read();
+
+    if (closefile)
+    {
+        file.close();
+    }
+
+    return line;
+}
+
+static void updateFileContents(fs::FS &fs, const char *file_to_updated, const char *temp_file)
+{
+
+    fs.remove(file_to_updated);
+    fs.rename(temp_file, file_to_updated);
+}
+
+static void closeFile(fs::FS &fs, const char *path)
+{
+    File file = fs.open(path, "r");
+    file.close();
+}
+
+void readSendDelete(const char *datafile)
+{
+
+    String data;
+    char sendingFile[44] = {};
+    strcat(sendingFile, datafile);
+    strcat(sendingFile, ".old");
+    SPIFFS.rename(datafile, sendingFile);
+
+    Serial.println("Attempting to send data that previously failed to send.");
+
+    int next_byte = -1;
+    int next_line_index = 0;
+
+    // readline continously
+    do
+    {
+
+        data = readLine(SPIFFS, sendingFile, next_byte, next_line_index, false);
+
+        Serial.println(data);
+
+        if (next_byte == -1) // End of file reached
+        {
+            Serial.println("End of file read");
+        }
+
+        // if (!validateJson(data.c_str()))
+        // {
+        //     Serial.println("Invalid JSON data: " + data);
+        //     continue;
+        // }
+
+        if (data != "")
+        {
+            StaticJsonDocument<256> doc;
+            deserializeJson(doc, data);        // Extract API_PIN from the JSON data
+            int api_pin = doc["API_PIN"] | -1; // Default to -1 if not found
+
+            if (api_pin == -1)
+            {
+                Serial.println("API_PIN not found in JSON data ");
+                continue; // Skip this data if API_PIN is not found
+            }
+
+            sendData(LoggerCFA, data, api_pin, HOST_CFA, URL_CFA);
+        }
+    } while (next_byte != -1);
+    // close files
+    closeFile(SPIFFS, sendingFile);
+    SPIFFS.remove(sendingFile);
+}
 #endif

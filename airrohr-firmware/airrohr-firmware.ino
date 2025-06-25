@@ -136,6 +136,8 @@ const unsigned long DISPLAY_UPDATE_INTERVAL_MS = 5000; // time between switching
 const unsigned long ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
 // const unsigned long PAUSE_BETWEEN_UPDATE_ATTEMPTS_MS = ONE_DAY_IN_MS; // check for firmware updates once a day
 const unsigned long DURATION_BEFORE_FORCED_RESTART_MS = ONE_DAY_IN_MS / 4; // force a reboot every 6hrs //? prevent board from "hanging"
+unsigned long last_resend_data_ms = 0;									   // last time we failed-to-send spiffs data to the server
+const unsigned long RESEND_DATA_INTERVAL_MS = 60 * 1000 * 60;			   // resend data every hour from failed-to-send spiffs data
 
 #include "namespace_cfg.h" // include namespace cfg
 
@@ -771,7 +773,7 @@ void setup(void)
 #endif
 
 	starttime = millis(); // store the start time
-	last_update_attempt = time_point_device_start_ms = starttime;
+	last_update_attempt = time_point_device_start_ms = last_resend_data_ms = starttime;
 	last_display_millis = starttime_SDS = starttime;
 }
 
@@ -788,6 +790,13 @@ void loop(void)
 			troubleshoot_GSM();
 		}
 	}
+
+	if (millis() - last_resend_data_ms > RESEND_DATA_INTERVAL_MS)
+	{
+		readSendDelete(SENSORS_FAILED_DATA_SEND_STORE_FILE); // read data from spiffs, send it and delete it
+		last_resend_data_ms = millis();
+	}
+
 	String result_PPD, result_SDS, result_PMS, result_HPM;
 	String result_GPS, result_DNMS;
 
