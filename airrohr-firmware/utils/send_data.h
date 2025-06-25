@@ -112,7 +112,7 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
         debug_out(F("## Sending via gsm\n\n"), DEBUG_MIN_INFO);
 
 #ifdef QUECTEL
-        QUECTEL_POST((char *)gprs_url, Quectel_headers, header_size, data, data.length());
+        QUECTEL_POST((char *)gprs_url, Quectel_headers, header_size, data, data.length(), statuscode);
         // ToDo: close HTTP session/ PDP context
 #else
         if (!fona.HTTP_POST_start((char *)gprs_url, F("application/json"), gprs_request_head, (uint8_t *)gprs_data, strlen(gprs_data), &statuscode, (uint16_t *)&length))
@@ -144,6 +144,31 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
         fona.HTTP_POST_end();
         disableGPRS();
 #endif
+
+        if (!(statuscode == 200 || statuscode == 201))
+        {
+            StaticJsonDocument<255> doc;
+            deserializeJson(doc, data);
+            doc["API_PIN"] = pin;
+
+            String serializedData;
+            serializeJson(doc, serializedData);
+
+            File fileDataLogger = SPIFFS.open(SENSORS_FAILED_DATA_SEND_STORE_FILE, "a");
+            if (!fileDataLogger)
+            {
+                Serial.println("Error opening spiffs to append to data logger");
+            }
+
+            if (fileDataLogger.println(serializedData))
+            {
+                Serial.println("Failed-to-send-data appended");
+            }
+            else
+            {
+                Serial.println("File to append to data logger");
+            }
+        }
     }
     else if (WiFi.status() == WL_CONNECTED)
     {

@@ -128,6 +128,8 @@ static const char URL_INFLUX[] PROGMEM = "/write?db=airquality";
 static const char MEASUREMENT_NAME_INFLUX[] PROGMEM = " ";
 #define SSL_INFLUX 0
 
+char SENSORS_FAILED_DATA_SEND_STORE_FILE[40] = "/failed_send_payloads.txt";
+
 //  pin assignments for NodeMCU V2 board
 #if defined(ESP8266)
 // define pin for one wire sensors
