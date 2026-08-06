@@ -74,7 +74,7 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
             { //! RESET COUNTER
                 GPRS_INIT_FAIL_COUNT = 0;
                 GSM_soft_reset();
-                GSM_init(fonaSerial);
+                GSM_Serial_begin();
             }
         }
     }
@@ -89,21 +89,18 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
         gprs_request_head += F("X-Sensor: esp8266-");
         gprs_request_head += esp_chipid;
 
-        // debug_out(F("Start connecting via GPRS"), DEBUG_MIN_INFO);
-        // debug_out(F("HOST "), DEBUG_MIN_INFO);
-        // debug_out(s_Host, DEBUG_MIN_INFO);
-        // debug_out(F("URL "), DEBUG_MIN_INFO);
-        // debug_out(s_url, DEBUG_MIN_INFO);
-        // debug_out(gprs_request_head, DEBUG_MIN_INFO);
-
 #ifdef QUECTEL
-        String Quectel_headers[3];
-        Quectel_headers[0] = "X-PIN: " + String(pin);
-        Quectel_headers[1] = "X-Sensor: esp8266-" + esp_chipid;
-        // Quectel_headers[1] = "X-Sensor: esp8266-quectel-test";       // testing node, comment and insert desired testing node ID
-        Quectel_headers[2] = "Content-Type: " + String(contentType); // 30
 
-        int header_size = sizeof(Quectel_headers) / sizeof(Quectel_headers[0]);
+        int q_statuscode = 0;
+
+        char http_headers[3][256] = {};
+        strcat(http_headers[0], "X-PIN: ");
+        strcat(http_headers[0], String(pin).c_str());
+
+        strcat(http_headers[1], "X-Sensor: ");
+        strcat(http_headers[1], "X-Sensor: esp8266-");
+        strcat(http_headers[1], esp_chipid.c_str());
+        strcat(http_headers[2], "Content-Type: application/json");
 
 #endif
 
@@ -130,7 +127,18 @@ static unsigned long sendData(const LoggerEntry logger, const String &data, cons
         debug_out(F("## Sending via gsm\n\n"), DEBUG_MIN_INFO);
 
 #ifdef QUECTEL
-        QUECTEL_POST((char *)gprs_url, Quectel_headers, header_size, data, data.length());
+        QUECTEL_POST(url, http_headers, 3, data.c_str(), data.length(), q_statuscode);
+
+        if (q_statuscode == 200 || q_statuscode == 201)
+        {
+            Serial.println("GSM: Data sent successfully");
+            return true;
+        }
+        else
+        {
+            Serial.println("GSM: Data send failed with HTTP status: " + String(q_statuscode));
+            return false;
+        }
         // ToDo: close HTTP session/ PDP context
 #else
         if (!fona.HTTP_POST_start((char *)gprs_url, F("application/json"), gprs_request_head, (uint8_t *)gprs_data, strlen(gprs_data), &statuscode, (uint16_t *)&length))

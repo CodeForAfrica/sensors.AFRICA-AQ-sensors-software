@@ -690,29 +690,32 @@ void setup(void)
 	createLoggerConfigs();
 	debug_outln_info(F("\nChipId: "), esp_chipid);
 
+	is_SDS_running = SDS_cmd(PmSensorCmd::Stop);
+
 	if (cfg::gsm_capable)
 	{
-		is_SDS_running = SDS_cmd(PmSensorCmd::Stop);
-		Serial.println("Attempting to setup GSM connection");
 
-		pinMode(QUECTEL_PWR_KEY, OUTPUT);
-		// pinMode(9, OUTPUT);
-		// // digitalWrite(16, HIGH);
-		// // delay(1000);
-		// // pinMode(16, OUTPUT);
-		// // digitalWrite(16, LOW);
-		// // delay(2500);
-		// // pinMode(16, OUTPUT);
-		// // digitalWrite(16, HIGH);
-		// digitalWrite(9, LOW);
-		delay(5000);
-
-		if (!GSM_init(fonaSerial))
+		if (GSM_Serial_begin() && GSM_init())
 		{
-			Serial.println("GSM not fully configured");
-			Serial.print("Failure point: ");
-			Serial.println(GSM_INIT_ERROR);
-			Serial.println();
+			GSM_CONNECTED = true;
+			NetMode modes[] = {NetMode::AUTO, NetMode::_2G, NetMode::_4G};
+			bool network_registered = false;
+
+			for (auto mode : modes)
+			{
+				if (setNetworkMode(mode) && register_to_network())
+				{
+					network_registered = true;
+					break;
+				}
+			}
+
+			if (!network_registered)
+			{
+				Serial.println("Failed to register to GSM network");
+				return;
+			}
+			GPRS_CONNECTED = GPRS_init();
 		}
 	}
 	if (!GPRS_CONNECTED)
